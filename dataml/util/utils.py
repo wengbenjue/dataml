@@ -1049,15 +1049,21 @@ def psi(actual, expect, val, q):
     return sum((var_cnt_proportion - expect_pred_proportion) * np.log(var_cnt_proportion / expect_pred_proportion))
 
 
-def model_psi(actual_probs, expect_probs,q):
-    var_cat=pd.qcut(actual_probs,q=q,duplicates='drop')
-    var_cat_cnt=var_cat.value_counts()+0.001
-    var_cnt_proportion=var_cat_cnt/sum(var_cat_cnt)
-    expect_pred_cnt=pd.cut(expect_probs,bins=len(var_cat.categories)).value_counts()
-    expect_pred_cnt_1 = expect_pred_cnt+0.001
-    expect_pred_proportion=expect_pred_cnt_1/sum(expect_pred_cnt_1)
-    return sum((var_cnt_proportion-expect_pred_proportion)/np.log(var_cnt_proportion/expect_pred_proportion))
+def model_psi(actual_probs, expect_probs, q):
+    # Calculate quantiles for actual_probs
+    var_cat = pd.qcut(actual_probs, q=q, duplicates='drop')
 
+    # Count occurrences in each bin and adjust counts to avoid zero values
+    var_cat_cnt = var_cat.value_counts() + 0.001
+    var_cnt_proportion = var_cat_cnt / var_cat_cnt.sum()
+
+    # Bin expected_probs using the same bins as var_cat
+    expect_pred_cnt = pd.cut(expect_probs, bins=var_cat.categories).value_counts() + 0.001
+    expect_pred_proportion = expect_pred_cnt / expect_pred_cnt.sum()
+
+    psi_values = (var_cnt_proportion - expect_pred_proportion) * np.log(var_cnt_proportion / expect_pred_proportion)
+
+    return psi_values.sum()
 
 def onehot_encode(df, save_path, flag='train',prefix='n_'):
     df_return = pd.DataFrame()

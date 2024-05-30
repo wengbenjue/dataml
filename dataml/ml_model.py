@@ -824,6 +824,9 @@ class MLModel:
                 plot_histogram(var_bin_tmp,feature,col_name=zh_filter_features[inx],rotation=rotation,label_bad=label_bad,
                    label_good=label_good, label=label)
 
+
+
+
     def oot_model_psi(self,score_name='y_prob',p=10,model_type='lgb'):
         """
         模型PSI
