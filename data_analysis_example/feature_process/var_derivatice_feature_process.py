@@ -32,7 +32,7 @@ class ScoreCardDerivationFeatureProcess(VarDerivaticeFeatureProcess):
         if  'title' in columns:
             transform_cnt(df,'title')
 
-        for item in ['n0', 'n1', 'n2', 'n2.1', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10', 'n11', 'n12', 'n13', 'n14']:
+        for item in ['n0', 'n1', 'n2', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10', 'n11', 'n12', 'n13', 'n14']:
             df['grade_to_mean_' + item] = df['grade'] / df.groupby([item])['grade'].transform('mean')
             df['grade_to_std_' + item] = df['grade'] / df.groupby([item])['grade'].transform('std')
 

@@ -81,14 +81,15 @@ cst_base_info_sql = 'select * from'
 
 
 # drop_columns=[] #earliesCreditLine /issueYearMonth
-# drop_columns=['issueDate','employmentTitle','postCode','regionCode'] #earliesCreditLine /issueYearMonth
-drop_columns=['issueDate'] #earliesCreditLine /issueYearMonth
+# drop_columns=['issueDate','employmentTitle','postCode','regionCode','earliesCreditLine'] #earliesCreditLine /issueYearMonth
+drop_columns=['issueDate','earliesCreditLine'] #earliesCreditLine /issueYearMonth
+# drop_columns=['issueDate'] #earliesCreditLine /issueYearMonth
 
 #特征处理
-# miss_rate=0.85 #缺失率阈值
-miss_rate=0.95 #缺失率阈值
-same_value_rate=0.95 #同值率剔除阈值
-# same_value_rate=0.85 #同值率剔除阈值
+miss_rate=0.85 #缺失率阈值
+# miss_rate=0.95 #缺失率阈值
+# same_value_rate=0.95 #同值率剔除阈值
+same_value_rate=0.85 #同值率剔除阈值
 y_target='isDefault' #目标Y字段名
 # y_target='Outcome' #目标Y字段名
 # y_target='SeriousDlqin2yrs' #目标Y字段名
@@ -99,25 +100,25 @@ min_value_count = 50 #类别变量最低要求频数
 
 #IV
 bin_method = 'chimerge' #分箱方法，tree | chimerge 决策树或卡方分箱
-# min_iv_limit=0.02
-min_iv_limit=0.001
-# max_iv_limit=0.5
-max_iv_limit=1000
+min_iv_limit=0.02
+# min_iv_limit=0.001
+max_iv_limit=0.5
+# max_iv_limit=1000
 
 max_num_bin = 5 #最大分箱数
 
 
 #相关性系数剔除
-# corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
-corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
+corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
+# corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
 
 #稳定性剔除
-# csi_threshold=0.85 #CSI稳定性剔除阈值
-csi_threshold=0.999 #CSI稳定性剔除阈值
+csi_threshold=0.85 #CSI稳定性剔除阈值
+# csi_threshold=0.999 #CSI稳定性剔除阈值
 
 #树模型剔除变量
-# forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
-forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
+forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
+# forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
 forest_select_max_depth=3 #树的最大深度
 
 #过采样、降采样配置
