@@ -121,6 +121,8 @@ forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
 # forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
 forest_select_max_depth=3 #树的最大深度
 
+use_woe = False #使用woe编码
+
 #过采样、降采样配置
 imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案under_sample、 over_sample、mix_sample
                                      desired_ratio=4, #降采样或者让过采样正负样本比例，只在imbalance_type='under_sample'或者imbalance_type='over_sample'时有效
@@ -234,6 +236,7 @@ mlModel=MLModel(
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process
     ,csi_feature_process=csi_feature_process
+#     ,feature_encoder = feature_encoder
     ,sheet_name=sheet_name
     ,var_zh_name=var_zh_name
     ,var_en_name=var_en_name
