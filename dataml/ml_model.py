@@ -26,7 +26,7 @@ from .util.utils import merge_dict,prob_distplot,feature_classify,onehot_encode
 from .util.utils import CustomScaler,gmm_train,output_list_by_model,catch_sim_or_notsim_cst,load_all_model_features
 from .util.utils import plot_corr,plot_histogram,model_psi,jaccard_similarity
 from .util.utils import lr_scored_card
-from .util.utils import circle_distrib,plot_distribuion,generate_short_uuid
+from .util.utils import circle_distrib,plot_distribuion,generate_short_uuid,tgi_wordcloud
 from .feature_process import VarDerivaticeFeatureProcess
 from .feature_encoder import FeatureEncoder,OnehotEncoder,WoeEncoder
 logger.info(sys.executable)
@@ -1094,6 +1094,12 @@ class MLModel:
         cluster_usr_profile_df['cluster'] = cluster_usr_profile_df['cluster'].astype(int)
         cluster_df_c = pd.merge(cluster_df_c,cluster_usr_profile_df,on='cluster',how='left')
         logger.info(cluster_df_c.head())
+        for col in new_tgi_df.columns:
+            feature_tgi_df = new_tgi_df[[col]].copy()
+            feature_tgi_df.columns = ['TGI']
+            feature_tgi_df.index.name = '特征'
+            print('客群{}偏好：'.format(col))
+            tgi_wordcloud(feature_tgi_df)
         cluster_df_c[[self.index_col,'cluster','profile_features']].to_csv(os.path.join(self.cache_dir,'cluster_usr_profile.csv'),encoding='utf8',index=True)
         return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_df_c
 

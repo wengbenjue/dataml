@@ -33,7 +33,8 @@ setup(
         "psycopg2-binary==2.8.6",
         "colorama==0.4.5",
         "bayesian-optimization==1.4.1",
-        "imbalanced-learn==0.8.0"
+        "imbalanced-learn==0.8.0",
+        "wordcloud==1.9.3"
     ],
     packages=find_packages(),
     long_description_content_type="",

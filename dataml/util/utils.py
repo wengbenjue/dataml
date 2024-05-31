@@ -53,7 +53,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
-
+from wordcloud import WordCloud
 
 import warnings
 
@@ -2055,6 +2055,31 @@ def plot_distribuion(df,y_target='target',plot_type='all'):
         )
     else:
         sns.distplot(df[cat_features+num_features])
+
+
+def tgi_wordcloud(feature_tgi_df):
+    # 设置中文显示
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.rcParams['axes.unicode_minus'] = False
+    # 将DataFrame转换为字典
+    data = feature_tgi_df['TGI'].to_dict()
+
+    # font_path = '/System/Library/Fonts/Supplemental/Songti.ttc'
+
+    # 以下为上述代码中的 WordCloud 部分
+    # 创建WordCloud对象
+    # wordcloud = WordCloud(font_path=font_path,width=800, height=400, background_color='white')
+    wordcloud = WordCloud(width=800, height=400, background_color='white')
+    # 生成词云
+    wordcloud.generate_from_frequencies(data)
+    # 显示词云图
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')  # 关闭坐标轴
+    # 保存图片到文件
+    # plt.savefig('./images/profile/用户画像_客群三.png', dpi=600, format='png')  # 设置 dpi 为超清
+    # plt.savefig('./images/profile/用户画像_客群三.svg', dpi=600, format='svg')  # 设置 dpi 为超清
+    plt.show()
 
 
 def clean_text(text):
