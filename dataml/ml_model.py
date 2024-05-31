@@ -1098,7 +1098,7 @@ class MLModel:
             feature_tgi_df = new_tgi_df[[col]].copy()
             feature_tgi_df.columns = ['TGI']
             feature_tgi_df.index.name = '特征'
-            print('客群{}偏好：'.format(col))
+            logger.info('客群{}偏好：'.format(col))
             tgi_wordcloud(feature_tgi_df)
         cluster_df_c[[self.index_col,'cluster','profile_features']].to_csv(os.path.join(self.cache_dir,'cluster_usr_profile.csv'),encoding='utf8',index=True)
         return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_df_c
