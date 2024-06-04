@@ -24,7 +24,7 @@ from .datasets import SQLDataset,Dataset
 from .feature_process import FeatureProcess
 from .util.utils import merge_dict,prob_distplot,feature_classify,onehot_encode
 from .util.utils import CustomScaler,gmm_train,output_list_by_model,catch_sim_or_notsim_cst,load_all_model_features
-from .util.utils import plot_corr,plot_histogram,model_psi,jaccard_similarity
+from .util.utils import plot_corr,plot_histogram,model_psi,calculate_psi,calculate_psi_histogram,jaccard_similarity
 from .util.utils import lr_scored_card
 from .util.utils import circle_distrib,plot_distribuion,generate_short_uuid,tgi_wordcloud
 from .feature_process import VarDerivaticeFeatureProcess
@@ -363,7 +363,7 @@ class MLModel:
                 cache_dir=self.cache_dir,
                 index_col=self.index_col
             )
-            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8',index=False)
+            # test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8',index=False)
             #feature importance
             feature_imp,data_dict=model.model_feature_importance(X,self.data_dict_path,iv_df=iv_df,data_dir=self.cache_dir)
             model.feature_explain(X_test=X_test,y_test=y_test,data_map=data_dict)
@@ -838,7 +838,9 @@ class MLModel:
             if model_type == model.model_type:
                 oot_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+'_oot_model_probs.csv'),encoding='utf8')
                 test_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8')
-                model_psi_oot = model_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
+                model_psi_oot = calculate_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
+                # model_psi_oot = calculate_psi_histogram(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
+                # model_psi_oot = model_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
                 logger.info('outtime model psi:{}'.format(model_psi_oot))
                 return model_psi_oot
 

@@ -1049,6 +1049,60 @@ def psi(actual, expect, val, q):
     return sum((var_cnt_proportion - expect_pred_proportion) * np.log(var_cnt_proportion / expect_pred_proportion))
 
 
+def calculate_psi_histogram(expected, actual, buckets=10):
+    def scale_range(input, min, max):
+        input += -(np.min(input))
+        input /= np.max(input) / (max - min + 1e-7)
+        input += min
+        return input
+
+    breakpoints = np.linspace(0, 1, buckets + 1)
+
+    # Scale data
+    expected_percents = np.histogram(scale_range(expected, 0, 1), breakpoints)[0] / len(expected)
+    actual_percents = np.histogram(scale_range(actual, 0, 1), breakpoints)[0] / len(actual)
+
+    # Replace 0% with a small number to avoid division by zero
+    expected_percents = np.where(expected_percents == 0, 0.0001, expected_percents)
+    actual_percents = np.where(actual_percents == 0, 0.0001, actual_percents)
+
+    psi_value = np.sum((expected_percents - actual_percents) * np.log(expected_percents / actual_percents))
+
+    return psi_value
+
+
+
+def calculate_psi(expected, actual, buckets=10):
+    def get_bins(data, bins):
+        # 使用qcut进行等频分箱
+        bin_edges = pd.qcut(data, q=bins, duplicates='drop', retbins=True)[1]
+        # 计算每个箱的边界
+        return bin_edges
+
+    def get_counts(data, bins):
+        # 根据边界计算每个箱的样本数
+        counts, _ = np.histogram(data, bins)
+        return counts
+
+    bin_edges = get_bins(expected, buckets)
+
+    expected_counts = get_counts(expected, bin_edges)
+    actual_counts = get_counts(actual, bin_edges)
+
+    # 计算每个箱的比例
+    expected_percents = expected_counts / len(expected)
+    actual_percents = actual_counts / len(actual)
+
+    # Replace 0% with a small number to avoid division by zero
+    expected_percents = np.where(expected_percents == 0, 0.0001, expected_percents)
+    actual_percents = np.where(actual_percents == 0, 0.0001, actual_percents)
+
+    psi_value = np.sum((expected_percents - actual_percents) * np.log(expected_percents / actual_percents))
+
+    return psi_value
+
+
+
 def model_psi(actual_probs, expect_probs, q):
     # Calculate quantiles for actual_probs
     var_cat = pd.qcut(actual_probs, q=q, duplicates='drop')
