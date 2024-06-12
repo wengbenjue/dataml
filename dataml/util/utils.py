@@ -797,6 +797,7 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
 
     # zh_columns = feature_imp[var_zh_name].values
     # feature_imp.dropna(axis = 0,inplace = True)
+    plt.figure()
     plt.title("Feature Importance")
     plt.barh(feature_imp_plt_top20[var_zh_name], feature_imp_plt_top20['feature_importance'])
     plt.show()
@@ -1003,6 +1004,7 @@ def prob_plot(score, prob):
     plt.yticks(np.arange(0, 1001, 100))
     plt.xlabel('prob')
     plt.ylabel("score")
+    plt.show()
 
 def lgbm_evaluate(X, X_test,y, **params):
     logger.info(params)
@@ -1188,9 +1190,9 @@ def model_test_eval(model_fit,
 
     y_score_test,y_pred_test,test_df = model_predict(model_fit,X_test)
     # 检查 test_df 是否有重复索引
-    logger.warning('是否有重复索引：'.format(test_df.index.duplicated().any()))
+    logger.debug('是否有重复索引：'.format(test_df.index.duplicated().any()))
     # 检查 y_test 是否有重复索引
-    logger.warning('是否有重复索引：'.format(y_test.index.duplicated().any()))
+    # logger.warning('是否有重复索引：'.format(y_test.index.duplicated().any()))
 
     # test_df = test_df[~test_df.index.duplicated(keep='first')]
     # y_test = y_test[~y_test.index.duplicated(keep='first')]
@@ -1242,6 +1244,7 @@ def model_test_eval(model_fit,
     },inplace=True)
     report_df_filter = report_df[['变量','分箱','总样本','响应样本','未响应样本','响应率','累计样本率','累计响应率','IV','KS','LIFT']]
     report_df_filter.to_csv(os.path.join(cache_dir,model_type+'_'+flag+'_report.csv'),encoding='utf8',index=False)
+    logger.info(report_df_filter.head())
 
     #模型评分分布
     logger.info('model distribution of {}...'.format(flag))
@@ -1251,12 +1254,16 @@ def model_test_eval(model_fit,
     # 概率转分数
     Basepoints = 600
     PDO=50
-    odds0 = test_df[y_target].value_counts()[1] / test_df[y_target].value_counts()[0]  # 好坏比
+    # odds0 = test_df[y_target].value_counts()[1] / test_df[y_target].value_counts()[0]  # 好坏比
+    odds0 = test_df[y_target].value_counts()[0] / test_df[y_target].value_counts()[1]  # 好坏比
+    logger.info(test_df[y_target].value_counts())
+    # odds0 = 20  # 好坏比 ,默认违约率假设为5% 95/5 //TODO
     test_df['score'] = test_df['y_prob'].apply(lambda x: Score(x, odds0, Basepoints=Basepoints, PDO=PDO))
 
     #概率评分映射关系
-    logger.info('model score...')
+    logger.info('{} model score...'.format(flag))
     prob_plot(score=test_df['score'],prob=test_df['y_prob'])
+
     test_df[[y_target,'y_prob','y_pred','score']].sort_values('score',ascending=True)
     test_df[[y_target,'y_prob','y_pred','score']].to_csv(os.path.join(cache_dir,model_type+'_model_probs.csv'),encoding='utf8',index=False)
     # test_df.to_csv(os.path.join(cache_dir,model_type+'_model_probs.csv'),encoding='utf8',index=False)
@@ -1268,6 +1275,7 @@ def prob_distplot(df,var_name='y_prob',bins=10):
     plt.style.use('ggplot')
     plt.subplots(figsize=(15, 6))
     sns.distplot(df[var_name], bins=bins)
+    plt.show()
 
 
 def model_predict_eval(model_fit,
@@ -1317,7 +1325,8 @@ def model_predict_eval(model_fit,
 
     logger.info(y_score_train.shape)
     logger.info(y_score_test.shape)
-    model_psi_test = model_psi(y_score_test,y_test,10)
+    # model_psi_test = model_psi(y_score_test,y_test,10)
+    model_psi_test = calculate_psi(y_score_train,y_score_test,10)
     logger.info('训练测试模型PSI：{}'.format(model_psi_test))
     return y_score_test,y_pred_test,test_df
 
