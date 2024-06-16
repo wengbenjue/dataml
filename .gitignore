@@ -28,3 +28,5 @@
 /data_analysis_example/cache/
 /data_analysis_example/*.log
 /data_analysis_example/__pycache__/
+/data_analysis_example/agent/metagpt/MetaGPT/.github/
+/data_analysis_example/agent/metagpt/MetaGPT/.devcontainer/

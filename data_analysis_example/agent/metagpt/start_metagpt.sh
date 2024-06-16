@@ -1,0 +1,1 @@
+metagpt --init-config

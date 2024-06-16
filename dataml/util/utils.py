@@ -1225,7 +1225,7 @@ def model_test_eval(model_fit,
     #混淆矩阵
     logger.info('Confusion Matrix of {} Data...'.format(flag))
     report_test = classification_report(y_test,y_pred_test)
-    logger.info(report_test)
+    print.info(report_test)
 
     #Lift曲线
     lift_cure(y_test,y_score_test)
