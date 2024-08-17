@@ -35,3 +35,7 @@
 /data_analysis_example/*.whl
 /data_analysis_example/feature_process/.ipynb_checkpoints/
 /dataml/__pycache__/
+/data_analysis_example/agent/
+/data_analysis_example/agent/metagpt/
+/data_analysis_example/agent/metagpt/MetaGPT/.devcontainer/
+/data_analysis_example/agent/metagpt/MetaGPT/.github/
