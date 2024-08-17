@@ -53,7 +53,10 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
-from wordcloud import WordCloud
+try:
+    from wordcloud import WordCloud
+except:
+    pass
 
 import warnings
 
@@ -1225,7 +1228,7 @@ def model_test_eval(model_fit,
     #混淆矩阵
     logger.info('Confusion Matrix of {} Data...'.format(flag))
     report_test = classification_report(y_test,y_pred_test)
-    print.info(report_test)
+    logger.info(report_test)
 
     #Lift曲线
     lift_cure(y_test,y_score_test)
@@ -2126,6 +2129,7 @@ def tgi_wordcloud(feature_tgi_df):
     plt.rcParams['axes.unicode_minus'] = False
     # 将DataFrame转换为字典
     data = feature_tgi_df['TGI'].to_dict()
+    cleaned_freq_dict = {k: (0 if np.isnan(v) else v) for k, v in data.items()}
 
     # font_path = '/System/Library/Fonts/Supplemental/Songti.ttc'
 
@@ -2134,7 +2138,7 @@ def tgi_wordcloud(feature_tgi_df):
     # wordcloud = WordCloud(font_path=font_path,width=800, height=400, background_color='white')
     wordcloud = WordCloud(width=800, height=400, background_color='white')
     # 生成词云
-    wordcloud.generate_from_frequencies(data)
+    wordcloud.generate_from_frequencies(cleaned_freq_dict)
     # 显示词云图
     plt.figure(figsize=(10, 5))
     plt.imshow(wordcloud, interpolation='bilinear')

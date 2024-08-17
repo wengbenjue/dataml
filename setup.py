@@ -5,7 +5,7 @@ _PATH_ROOT = os.path.dirname(__file__)
 
 setup(
     name="dataml",
-    version="0.1.4",
+    version="0.1.6",
     description="data analysis machine learning",
     author="",
     url="",
@@ -14,7 +14,7 @@ setup(
         "wheel",
         "scikit_learn==0.24.2",
         "matplotlib==3.3.4",
-        "scikit_learn<=1.0.2",
+        # "scikit_learn<=1.0.2",
         "seaborn==0.11.2",
         "tqdm==4.64.1",
         "numpy==1.19.5",
@@ -44,4 +44,3 @@ setup(
             '': ['*.so','*.pyd']
         }
 )
-

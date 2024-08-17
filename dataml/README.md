@@ -1,0 +1,1 @@
+![](./images/class-diagram-automl-pipline.svg)

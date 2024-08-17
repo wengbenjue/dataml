@@ -363,7 +363,7 @@ class MLModel:
                 cache_dir=self.cache_dir,
                 index_col=self.index_col
             )
-            # test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8',index=False)
+            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8',index=False)
             #feature importance
             feature_imp,data_dict=model.model_feature_importance(X,self.data_dict_path,iv_df=iv_df,data_dir=self.cache_dir)
             model.feature_explain(X_test=X_test,y_test=y_test,data_map=data_dict)
@@ -552,6 +552,9 @@ class MLModel:
 
         n_num_df = self.negative_custom_scaler.fit_transform(df[cat_features])
         negative_df = pd.concat([cat_features, n_num_df], axis=1)
+
+
+
         logger.info('dimension of negative sample:{}.'.format(negative_df.shape))
         if need_reduce_dim:
             X_n_sparse = csr_matrix(negative_df)
@@ -975,14 +978,23 @@ class MLModel:
         gmm = models[best_cluster_length]
         pred_labels = gmm.predict(X)
 
-        X_n_sparse = csr_matrix(X)
-        n_components = 2
-        svd = TruncatedSVD(n_components=n_components)
-        x_n_reduced = svd.fit_transform(X_n_sparse)
+        try:
+            X.replace([np.inf, -np.inf], np.nan, inplace=True)
+            # 使用列的平均值替换 NaN 值
+            X.fillna(X.mean(), inplace=True)
+            # 将清理后的 DataFrame 转换为稀疏矩阵
+            X_n_sparse = csr_matrix(X.values)
+            # X_n_sparse = csr_matrix(X)
+            n_components = 2
+            svd = TruncatedSVD(n_components=n_components)
+            x_n_reduced = svd.fit_transform(X_n_sparse)
 
-        plt.figure(figsize=(16,10))
-        plt.scatter(x_n_reduced[:,0],x_n_reduced[:,1],c=pred_labels,s=40,cmap='viridis')
-        plt.show()
+            plt.figure(figsize=(16,10))
+            plt.scatter(x_n_reduced[:,0],x_n_reduced[:,1],c=pred_labels,s=40,cmap='viridis')
+            plt.show()
+        except Exception as e:
+            print(e)
+            pass
 
         cluster_df['cluster'] = pred_labels
 
@@ -1101,7 +1113,12 @@ class MLModel:
             feature_tgi_df.columns = ['TGI']
             feature_tgi_df.index.name = '特征'
             logger.info('客群{}偏好：'.format(col))
-            tgi_wordcloud(feature_tgi_df)
+
+            try:
+                tgi_wordcloud(feature_tgi_df)
+            except Exception as e:
+                print(e)
+
         cluster_df_c[[self.index_col,'cluster','profile_features']].to_csv(os.path.join(self.cache_dir,'cluster_usr_profile.csv'),encoding='utf8',index=True)
         return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_df_c
 

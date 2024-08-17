@@ -25,8 +25,12 @@
 /data_analysis_example/validation_set.csv
 /data_analysis_example/outtime_set.csv
 /data_analysis_example/.virtual_documents/
+/.virtual_documents/
+/data_analysis_example/agent/metagpt/.ipynb_checkpoints/
+/dataml/.ipynb_checkpoints/
+/dataml/*.gz
 /data_analysis_example/cache/
-/data_analysis_example/*.log
-/data_analysis_example/__pycache__/
-/data_analysis_example/agent/metagpt/MetaGPT/.github/
-/data_analysis_example/agent/metagpt/MetaGPT/.devcontainer/
+/data_analysis_example/pandasai.log
+/data_analysis_example/agent/metagpt/logs/
+/data_analysis_example/*.whl
+/data_analysis_example/feature_process/.ipynb_checkpoints/
