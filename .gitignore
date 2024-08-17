@@ -34,3 +34,4 @@
 /data_analysis_example/agent/metagpt/logs/
 /data_analysis_example/*.whl
 /data_analysis_example/feature_process/.ipynb_checkpoints/
+/dataml/__pycache__/
