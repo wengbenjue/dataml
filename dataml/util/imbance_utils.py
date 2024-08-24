@@ -341,7 +341,7 @@ def calculate_sampling_ratios(n_pos, n_neg, r_target,r_under = 0.5):
 
     return r_under, r_over
 
-def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5):
+def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5,data_dir=None):
     """
        混合采样，按指定目标比例进行过采样和欠采样。
 
@@ -362,7 +362,7 @@ def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',und
     df_under = under_sample(df, y_target=y_target, desired_ratio=r_under)
 
     # 进行过采样
-    df_mixed = oversample_dataframe(df_under, y_target=y_target, positive_class_ratio=r_over)
+    df_mixed = oversample_dataframe(df_under, y_target=y_target, positive_class_ratio=r_over,data_dir=data_dir)
 
     return df_mixed
 

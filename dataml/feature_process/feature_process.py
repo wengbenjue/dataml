@@ -371,7 +371,7 @@ class ImbalanceProcess(DoubleFeatureProcess):
             df_balanced = mixed_sampling_with_categorical(df,
                                                           self.desired_ratio,
                                                           y_target=self.y_target,
-                                                          under_desired_ratio=self.under_desired_ratio)
+                                                          under_desired_ratio=self.under_desired_ratio,data_dir=self.data_dir)
         logger.debug('{},{},using {} sample strategy'.format(self.name, df.shape,self.imbalance_type))
         return df_balanced,None
 
