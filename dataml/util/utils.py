@@ -808,7 +808,7 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
     # plt.show()
 
     plt.figure(figsize=(16, 16))
-    sns.barplot(data=feature_imp_plt_top20[var_zh_name], x='feature_importance', y='feature')
+    sns.barplot(data=feature_imp_plt_top20, x='feature_importance', y=var_zh_name)
     plt.title('20 TOP feature importance')
     plt.show()
 

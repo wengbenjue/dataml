@@ -130,7 +130,7 @@ rorestFeatureProcess = None
 #过采样、降采样配置
 imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
                                      desired_ratio=1/4, #目标降采样或者过采样后少数样本占多数样本比例
-                                     under_desired_ratio=1/8,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
+                                     under_desired_ratio=1/2,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
                                      y_target=y_target)
 
 
