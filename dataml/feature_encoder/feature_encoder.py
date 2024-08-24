@@ -20,7 +20,7 @@ class FeatureEncoder:
         all_df[target] = y
         all_df = all_df.reset_index()
         all_df.to_csv(self.model_dir + '/all_features_{}.csv'.format(model_type), index=False)
-        logger.error('feature save successfully,path:{}'.format(self.model_dir + '/all_features_{}.csv'.format(model_type)))
+        logger.info('feature save successfully,path:{}'.format(self.model_dir + '/all_features_{}.csv'.format(model_type)))
         logger.debug(all_df.shape)
 
 
