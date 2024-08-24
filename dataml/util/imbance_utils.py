@@ -320,65 +320,51 @@ from imblearn.pipeline import Pipeline
 import pandas as pd
 
 
-def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target'):
+def calculate_sampling_ratios(n_pos, n_neg, r_target,r_under = 0.5):
     """
-    根据指定的少数样本比多数样本的比例进行混合采样（过采样+欠采样）。
+    计算过采样和欠采样的desired_ratio，以实现指定的少数类/多数类目标比例。
 
-    :param df: 原始数据集的DataFrame
-    :param desired_ratio: 目标少数类样本占多数类样本的比例
-    :param y_target: 目标变量的列名
-    :return: 采样后的DataFrame
+    :param n_pos: 原始少数类样本数量
+    :param n_neg: 原始多数类样本数量
+    :param r_target: 希望达到的少数类/多数类目标比例
+    :param r_under: 1.先指定一个欠采样比例(少数类(1)/多数类目标比例(0),可以调整这个值，决定欠采样的强度
+    :return: 欠采样的desired_ratio (r_under), 过采样的desired_ratio (r_over)
     """
-    # 对类别特征进行标签编码
-    _, _, _, cat_features, num_features = feature_classify(df, target=y_target)
-    df_encoded = df.copy()
-    encoders = {}
-    for col in cat_features:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df[col])
-        encoders[col] = encoder
 
-    # 分割特征和目标变量
-    X = df_encoded.drop(y_target, axis=1)
-    y = df_encoded[y_target]
+    # 2. 计算过采样比例
+    r_over = (r_target * n_neg * r_under) / n_pos
 
-    # 计算类别的数量
-    n_pos = sum(y == 1)
-    n_neg = sum(y == 0)
+    # 3. 如果计算的过采样比例大于1，则调整欠采样比例
+    if r_over > 1:
+        r_over = 1
+        r_under = (n_pos * r_over) / (r_target * n_neg)
 
-    # 计算并检查过采样和欠采样的目标数量
-    target_pos = int(n_neg * desired_ratio)
+    return r_under, r_over
 
-    if target_pos > n_pos:
-        # 确定过采样策略，目标少数类样本数量
-        oversample_strategy = target_pos / n_pos
+def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5):
+    """
+       混合采样，按指定目标比例进行过采样和欠采样。
 
-        # 确定欠采样策略，目标多数类样本数量
-        undersample_strategy = target_pos / (1 - desired_ratio)
-        undersample_strategy = min(undersample_strategy / n_neg, 1.0)
+       :param df: 数据集
+       :param desired_ratio: 希望达到的少数类/多数类目标比例
+       :param y_target: 目标变量列名
+       :param under_desired_ratio: 1.先指定一个欠采样比例(少数类(1)/多数类目标比例(0),可以调整这个值，决定欠采样的强度
+       :return: 经过混合采样后的DataFrame
+       """
+    # 获取少数类和多数类样本数量
+    n_pos = sum(df[y_target] == 1)
+    n_neg = sum(df[y_target] == 0)
 
-        # 使用SMOTE过采样和RandomUnderSampler欠采样
-        over = SMOTE(sampling_strategy=oversample_strategy)
-        under = RandomUnderSampler(sampling_strategy=undersample_strategy)
+    # 计算过采样和欠采样的比例
+    r_under, r_over = calculate_sampling_ratios(n_pos, n_neg, desired_ratio,r_under=under_desired_ratio)
 
-        # 创建采样管道
-        pipeline = Pipeline(steps=[('o', over), ('u', under)])
+    # 进行欠采样
+    df_under = under_sample(df, y_target=y_target, desired_ratio=r_under)
 
-        # 应用管道进行采样
-        X_resampled, y_resampled = pipeline.fit_resample(X, y)
-    else:
-        logger.info('The desired sample ratio is too low. No sampling performed.')
-        X_resampled, y_resampled = X, y
+    # 进行过采样
+    df_mixed = oversample_dataframe(df_under, y_target=y_target, positive_class_ratio=r_over)
 
-    # 将采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    # 反向转换类别特征
-    for col, encoder in encoders.items():
-        df_resampled[col] = encoder.inverse_transform(df_resampled[col].astype(int))
-
-    return df_resampled
+    return df_mixed
 
 def mixed_sampling_with_categorical1(df,oversample_strategy=0.2, undersample_strategy=0.5,y_target='target'):
     # 对类别特征进行标签编码

@@ -802,10 +802,17 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
 
     # zh_columns = feature_imp[var_zh_name].values
     # feature_imp.dropna(axis = 0,inplace = True)
-    plt.figure()
-    plt.title("Feature Importance")
-    plt.barh(feature_imp_plt_top20[var_zh_name], feature_imp_plt_top20['feature_importance'])
+    # plt.figure()
+    # plt.title("Feature Importance")
+    # plt.barh(feature_imp_plt_top20[var_zh_name], feature_imp_plt_top20['feature_importance'])
+    # plt.show()
+
+    plt.figure(figsize=(16, 16))
+    sns.barplot(data=feature_imp_plt_top20[var_zh_name], x='feature_importance', y='feature')
+    plt.title('20 TOP feature importance')
     plt.show()
+
+
     # feature_imp.sort_values(by='feature_importance', ascending=False, inplace=True)
     return feature_imp_plt_sort,data_map
 
@@ -1160,13 +1167,15 @@ def onehot_encode(df, save_path, flag='train', prefix='n_'):
 
         new_columns = list(set([col.split('_')[0] for col in encoded_columns]))
         print(new_columns)
+        num_cols = [col for col in df.columns if col not in encoded_columns]
 
         # 确保DataFrame中存在这些列
         if all(col in df.columns for col in encoded_columns):
-            df_return = pd.DataFrame(
+            df_return_cat = pd.DataFrame(
                 enc.inverse_transform(df[encoded_columns].values),
                 columns=new_columns
             )
+            df_return = pd.concat([df[num_cols], df_return_cat], axis=1)
         else:
             raise KeyError(f"Columns {encoded_columns} are not found in the DataFrame.")
     else:
@@ -1922,7 +1931,7 @@ def pairplot(df,target='target'):
 
 def circle_distrib(df_dis,labels=['负样本', '正样本']):
     my_circle = plt.Circle((0, 0), 0.7, color='white')
-    plt.pie(df_dis, labels=labels, colors=['blue', 'yellow'], autopct='%1.1f%%')
+    plt.pie(df_dis, labels=labels, colors=['#a8d8ea', '#aa96da'], autopct='%1.1f%%')
     p = plt.gcf()
     p.gca().add_artist(my_circle)
     plt.show()

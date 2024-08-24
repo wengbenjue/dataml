@@ -345,8 +345,7 @@ class ImbalanceProcess(DoubleFeatureProcess):
     数据不均衡处理
     '''
     def __init__(self,name = '数据不均衡处理',imbalance_type='under_sample',desired_ratio=2,k_neighbors=5,
-                 oversample_strategy=0.2,
-                 undersample_strategy=0.5,
+                 under_desired_ratio=1/6,
                  y_target='label',
                  data_dir='./data'):
         self.name = name
@@ -354,8 +353,7 @@ class ImbalanceProcess(DoubleFeatureProcess):
         #少数类占多数类比例，目标样本浓度
         self.desired_ratio = desired_ratio
         self.k_neighbors = k_neighbors
-        self.oversample_strategy = oversample_strategy
-        self.undersample_strategy = undersample_strategy
+        self.under_desired_ratio = under_desired_ratio
         self.data_dir = data_dir
 
         self.y_target=y_target
@@ -372,7 +370,8 @@ class ImbalanceProcess(DoubleFeatureProcess):
         else:
             df_balanced = mixed_sampling_with_categorical(df,
                                                           self.desired_ratio,
-                                                          y_target=self.y_target)
+                                                          y_target=self.y_target,
+                                                          under_desired_ratio=self.under_desired_ratio)
         logger.debug('{},{},using {} sample strategy'.format(self.name, df.shape,self.imbalance_type))
         return df_balanced,None
 

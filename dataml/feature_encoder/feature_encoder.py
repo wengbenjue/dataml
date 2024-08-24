@@ -40,17 +40,20 @@ class OnehotEncoder(FeatureEncoder):
             cate_onehot_df = onehot_encode(X[cat_features],
                                            self.model_dir,
                                            flag='train', prefix=prefix)
+            X = pd.concat([cate_onehot_df, X[num_features]], axis=1)
         elif flag == 'inverse_transform':
             cate_onehot_df = onehot_encode(X,
                                            self.model_dir,
                                            flag='inverse_transform', prefix=prefix)
+            X = cate_onehot_df
         else:
             # one-hot encoding for test
             cate_onehot_df = onehot_encode(X[cat_features],
                                            self.model_dir,
                                            flag='test', prefix=prefix)
+            X = pd.concat([cate_onehot_df, X[num_features]], axis=1)
         logger.info(cate_onehot_df.shape)
-        X = pd.concat([cate_onehot_df, X[num_features]], axis=1)
+
         return X
 
 

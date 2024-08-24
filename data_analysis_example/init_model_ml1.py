@@ -128,10 +128,9 @@ forest_select_max_depth=3 #树的最大深度
 rorestFeatureProcess = None
 
 #过采样、降采样配置
-imbalance_process = ImbalanceProcess(imbalance_type='over_sample',#采样方案:under_sample、 over_sample、mix_sample
+imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
                                      desired_ratio=1/4, #目标降采样或者过采样后少数样本占多数样本比例
-                                     oversample_strategy=0.5,#只在imbalance_type='mix_sample'生效，过采样比例，如0.2代表采样后少数类样本占比多数类样本的20%
-                                     undersample_strategy=0.5,#只在imbalance_type='mix_sample'生效，将采样比例，如0.5代表采样后多数类样本是少数类样本的2倍
+                                     under_desired_ratio=1/8,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
                                      y_target=y_target)
 
 
