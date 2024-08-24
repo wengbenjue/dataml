@@ -35,7 +35,7 @@ class LogisticRegressionModel(BaseModel):
                 'class_weight':self.class_weight,
                 'max_iter': self.max_iter}
         self.params_new.update(best_params)
-        logger.info(self.params_new)
+        logger.debug(self.params_new)
 
         self.model = LogisticRegression(random_state=0,C=self.params_new['C'],penalty=self.params_new['penalty'],
 solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
@@ -59,9 +59,9 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
         lr_coef = self.model_fit.coef_
         logger.info('输出特征重要性')
         sorted_inx = np.argsort(-lr_coef)
-        print('变量名：{}'.format(X.columns[sorted_inx[-5:]]))
-        print('系数：{}'.format(-np.sort(-lr_coef)))
-        print('截距：{}'.format(self.model_fit.intercept_))
+        logger.debug('变量名：{}'.format(X.columns[sorted_inx[-5:]]))
+        logger.debug('系数：{}'.format(-np.sort(-lr_coef)))
+        logger.debug('截距：{}'.format(self.model_fit.intercept_))
         return None,None
 
     def feature_explain(self, X_test, y_test, data_map=None):
@@ -73,10 +73,10 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                 :return:
                 """
         if self.explain_models is None:
-            logger.info('没有特征解释器！')
+            logger.debug('没有特征解释器！')
         else:
             for explain_model in self.explain_models:
-                logger.info(explain_model)
+                logger.debug(explain_model)
                 explain_model.var_explain(model_fit=self.model_fit, X=X_test, y=y_test, data_dict=data_map,exlpain_type='linear')
 
     def train(self, X, y):
@@ -109,9 +109,9 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                       cache_dir=None,
                       flag='test',
                       index_col='cst_id'):
-        logger.info(self.name)
+        logger.debug(self.name)
         if self.model_fit is None:
-            logger.info('please load model first using self.load(model_dir)')
+            logger.debug('please load model first using self.load(model_dir)')
             return None, None, None
         else:
             y_score_test, y_pred_test, test_df = model_test_eval(self.model_fit,
@@ -133,9 +133,9 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                  y_target,
                  cache_dir=None,
                  index_col='cst_id'):
-        logger.info(self.name)
+        logger.debug(self.name)
         if self.model_fit is None:
-            logger.info('请先使用self.load(model_dir)加载模型！')
+            logger.debug('请先使用self.load(model_dir)加载模型！')
             return None, None, None
         else:
             y_score_test, y_pred_test, test_df = model_predict_eval(self.model_fit,

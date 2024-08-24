@@ -9,7 +9,7 @@ import pickle
 from ..util.utils import feature_classify,null_rate_filter,value_counts_stats,iv_filter,corr_filter,process_data
 from ..util.utils import var_equal_bin,prob_plot,most_value_plot,outlier_process,quartile_filter
 from ..util.utils import num_csi_filter,cat_csi_filter,var_csi,forest_selection,plot_corr,checkVIF,stepwise_selection
-from ..util.utils import under_sample,oversample_dataframe,mixed_sampling_with_categorical
+from ..util.imbance_utils import under_sample,oversample_dataframe,mixed_sampling_with_categorical
 from ..util.utils import clean_text
 
 from typing import List
@@ -95,7 +95,7 @@ class VarDerivaticeFeatureProcess (UniFeatureProcess):
         self.name =name
 
     def process(self, df, df1=None, df2=None, mode='train'):
-        logger.info('{},{}'.format(self.name,'暂无衍生，建议通过SQL衍生宽表。'))
+        logger.debug('{},{}'.format(self.name,'暂无衍生，建议通过SQL衍生宽表。'))
         return df,None
 
 class MissValueFeatureProcess(UniFeatureProcess):
@@ -105,7 +105,7 @@ class MissValueFeatureProcess(UniFeatureProcess):
 
     def process(self, df, df1=None, df2=None, mode='train'):
         df = null_rate_filter(df,r=self.miss_rate)
-        logger.info('{},{}'.format(self.name, df.shape))
+        logger.debug('{},{}'.format(self.name, df.shape))
         return df,None
 class CatClusterValueFeatureProcess (UniFeatureProcess):
     def __init__(self,name = '类别变量值合并处理',min_value_count=100,y_target='label'):
@@ -123,7 +123,7 @@ class CatClusterValueFeatureProcess (UniFeatureProcess):
          for col in cat_features:
              cat_value_counts = df[col].value_counts()
              df[col] = df[col].apply(lambda x: 'Unknown' if cat_value_counts[x] < self.min_value_count else x)
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 
@@ -136,7 +136,7 @@ class MostValueValueFeatureProcess (UniFeatureProcess):
 
     def process(self, df, df1=None, df2=None, mode='train'):
          df,_ = value_counts_stats(df,same_value_rate=self.same_value_rate,target=self.y_target)
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 class VarianceThresholdFeatureProcess (UniFeatureProcess):
@@ -156,7 +156,7 @@ class VarianceThresholdFeatureProcess (UniFeatureProcess):
          num_features = list(df[num_features].columns[mask])
          logger.info('筛选出的数值特征个数：{}'.format(len(num_features)))
          df = df[cat_features+num_features]
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 class OutlierFeatureProcess (UniFeatureProcess):
@@ -168,8 +168,8 @@ class OutlierFeatureProcess (UniFeatureProcess):
     def process(self, df, df1=None, df2=None, mode='train'):
          _, _, _, cat_features, num_features = feature_classify(df, target=self.y_target)
          df_rem=outlier_process(df,self.cache_dir,num_features,flag=mode)
-         logger.info('{},{}'.format(self.name, df.shape))
-         logger.info(len(num_features))
+         logger.debug('{},{}'.format(self.name, df.shape))
+         logger.debug(len(num_features))
 
          df = pd.concat([df[cat_features],df_rem],axis=1)
          del df_rem
@@ -186,7 +186,7 @@ class QuartileFeatureProcess (UniFeatureProcess):
          _, _, _, cat_features, num_features = feature_classify(df, target=self.y_target)
          num_features = quartile_filter(num_features,df)
          df = pd.concat([df[cat_features], df[num_features]], axis=1)
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 class MissValueFillFeatureProcess (UniFeatureProcess):
@@ -200,7 +200,7 @@ class MissValueFillFeatureProcess (UniFeatureProcess):
     def process(self, df, df1=None, df2=None, mode='train'):
          _, _, _, cat_features, num_features = feature_classify(df, target=self.y_target)
          df=process_data(df,num_features,cat_features,stats_file=self.stats_file,mode=mode)
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 #双变量处理
@@ -234,14 +234,14 @@ class IVFeatureProcess (DoubleFeatureProcess):
         for key, value in bins.items():
             var_bin_df = pd.concat([var_bin_df, value], axis=0)
         try:
-            logger.info(var_bin_df.head())
+            logger.debug(var_bin_df.head())
             var_bin_df.to_csv(os.path.join(self.model_dir,'var_bin.csv'))
         except Exception as e:
-            logger.info(f'error:{e}')
+            logger.error(f'error:{e}')
 
         with open(os.path.join(self.model_dir,'bins.pkl'), "wb") as f:
             pickle.dump(bins, f)
-            logger.info('bins保存成功!')
+            logger.debug('bins保存成功!')
         #IV值变量筛选
         iv_features, var_iv_list = iv_filter(var_bin_df, min_iv_limit=self.min_iv_limit, max_iv_limit=self.max_iv_limit,model_dir=self.model_dir)
         x_var_iv_list = [c for c in iv_features]
@@ -250,7 +250,7 @@ class IVFeatureProcess (DoubleFeatureProcess):
         # iv_df = var_iv_list.reset_index(inplace=True)
         iv_df = var_iv_list.reset_index(inplace=False)
         iv_df.to_csv(os.path.join(self.model_dir,'iv_df.csv'))
-        logger.info('{},{}'.format(self.name, df.shape))
+        logger.debug('{},{}'.format(self.name, df.shape))
         return df,iv_df
 
 class CorrFeatureProcess (DoubleFeatureProcess):
@@ -267,7 +267,7 @@ class CorrFeatureProcess (DoubleFeatureProcess):
          corr_filter_features = list(set([c for c in corr_filter_list]))
          cat_features.append(self.y_target)
          df = pd.concat([df[corr_filter_features],df[cat_features]],axis=1)
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 class CSIFeatureProcess(DoubleFeatureProcess):
@@ -304,7 +304,7 @@ class CSIFeatureProcess(DoubleFeatureProcess):
                 psi_rem.to_csv(os.path.join(self.model_dir,'csi.csv'))
 
             except Exception as e:
-                logger.info(f'error:{e}')
+                logger.error(f'error:{e}')
 
             logger.info('{},{}'.format(self.name, df.shape))
         return df, None
@@ -336,7 +336,7 @@ class ForestFeatureProcess (DoubleFeatureProcess):
          feature_result = forest_filter_features
          feature_result.append(self.y_target)
          df = df_all[feature_result]
-         logger.info('{},{}'.format(self.name, df.shape))
+         logger.debug('{},{}'.format(self.name, df.shape))
          return df,None
 
 
@@ -347,29 +347,33 @@ class ImbalanceProcess(DoubleFeatureProcess):
     def __init__(self,name = '数据不均衡处理',imbalance_type='under_sample',desired_ratio=2,k_neighbors=5,
                  oversample_strategy=0.2,
                  undersample_strategy=0.5,
-                 y_target='label'):
+                 y_target='label',
+                 data_dir='./data'):
         self.name = name
         self.imbalance_type = imbalance_type
-        # 设定您希望的正负样本采样比例（例如2代表正样本是负样本的两倍）
+        #少数类占多数类比例，目标样本浓度
         self.desired_ratio = desired_ratio
         self.k_neighbors = k_neighbors
         self.oversample_strategy = oversample_strategy
         self.undersample_strategy = undersample_strategy
+        self.data_dir = data_dir
 
         self.y_target=y_target
 
     def process(self, df, df1=None, df2=None, mode='train'):
-        df_balanced = df
+        df_balanced = df.copy()
+        if self.imbalance_type is None:
+            logger.info('no sample strategy,do not process.')
+            return df_balanced,None
         if self.imbalance_type == 'under_sample':
             df_balanced = under_sample(df,self.y_target,self.desired_ratio)
         elif self.imbalance_type == 'over_sample':
-            df_balanced = oversample_dataframe(df, y_target=self.y_target, positive_class_ratio=self.desired_ratio)
+            df_balanced = oversample_dataframe(df, y_target=self.y_target, positive_class_ratio=self.desired_ratio,data_dir=self.data_dir)
         else:
             df_balanced = mixed_sampling_with_categorical(df,
-                                                          oversample_strategy=self.oversample_strategy,
-                                                          undersample_strategy=self.undersample_strategy,
+                                                          self.desired_ratio,
                                                           y_target=self.y_target)
-        logger.info('{},{},using {} sample strategy'.format(self.name, df.shape,self.imbalance_type))
+        logger.debug('{},{},using {} sample strategy'.format(self.name, df.shape,self.imbalance_type))
         return df_balanced,None
 
 

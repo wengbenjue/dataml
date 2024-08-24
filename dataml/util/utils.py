@@ -47,11 +47,13 @@ from matplotlib.ticker import FuncFormatter
 from statsmodels.stats.outliers_influence import variance_inflation_factor as vif
 
 
+
+
+from sklearn.preprocessing import OneHotEncoder
+
 import pandas as pd
-from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder
+
+
 
 try:
     from wordcloud import WordCloud
@@ -177,7 +179,7 @@ def null_rate_filter(df, r=0.80):
     df_list = list(na_rate[na_rate < r].index)
     df = df[df_list].copy()
     logger.info("缺失率高于{}的变量个数为：{}".format(r, len(na_list)))
-    logger.info("剔除缺失率高于{}的变量：".format(r))
+    logger.debug("剔除缺失率高于{}的变量：".format(r))
     # logger.info(', '.join(na_list))
     return df
 
@@ -240,7 +242,7 @@ def iv_filter(var_bin_df, min_iv_limit=0.02, max_iv_limit=0.5,model_dir=None):
     var_iv_list = var_iv_list.set_index('variable')
     var_iv_list = var_iv_list[(var_iv_list['IV'] > min_iv_limit) & (var_iv_list['IV'] < max_iv_limit)]
     iv_features = list(var_iv_list.index)
-    logger.info('IV筛选后的特征个数:{}'.format(len(iv_features)) )
+    logger.debug('IV筛选后的特征个数:{}'.format(len(iv_features)) )
     # logger.info('IV筛选后的特征:', ', '.join(iv_features))
     return iv_features, var_iv_list
 
@@ -295,7 +297,7 @@ def corr_filter(train_df, x_var_iv_list, iv_df, corr_threshold=0.8):
 
     corr_filter_list = tmp_num
     logger.info('相关性剔除后的变量个数为：{}'.format(len(corr_filter_list)))
-    logger.info('相关性剔除后的变量：{}'.format(', '.join(corr_filter_list)))
+    logger.debug('相关性剔除后的变量：{}'.format(', '.join(corr_filter_list)))
     return corr_filter_list
 
 
@@ -380,7 +382,7 @@ def little_pvalue_check(col_most_values_df, df, col_large_value, y_target):
     bad_rate_diff_sorted = sorted(bad_rate_diff.items(), key=lambda x: x[1], reverse=True)
     bad_rate_diff_sorted_vals = [x[1] for x in bad_rate_diff_sorted]
     plt.bar(x=range(len(bad_rate_diff_sorted_vals)), height=bad_rate_diff_sorted_vals)
-    logger.info(len(large_percent_cols))
+    logger.debug(len(large_percent_cols))
     return bad_rate_diff
 
 
@@ -401,7 +403,7 @@ def pvalue_log_filter(bad_rate_diff, cat_features, num_features, bad_good_log_ra
 
 
 def outlier_process(df,cache_dir, num_features, flag='train'):
-    logger.info('异常值3 sigma盖帽处理')
+    logger.debug('异常值3 sigma盖帽处理')
     df_desc = None
     df_rem = df[num_features].copy()
     outlier_path = os.path.join(cache_dir,'outlier_df_desc.pickle')
@@ -417,12 +419,12 @@ def outlier_process(df,cache_dir, num_features, flag='train'):
         ## 保存训练集特征分布
         with open(outlier_path, "wb") as f:
             pickle.dump(df_desc, f)
-            logger.info('训练集分布保存成功!')
+            logger.debug('训练集分布保存成功!')
     else:
         # 加载训练集分布
         with open(outlier_path, "rb") as f:
             df_desc = pickle.load(f)
-            logger.info('加载训练集分布成功!')
+            logger.debug('加载训练集分布成功!')
         abn_col = num_features
 
     for abn in abn_col:
@@ -574,7 +576,7 @@ def stepwise_selection(X, y, initial_list=[], threshold_in=0.05, threshold_out=0
             included.append(best_feature)
             changed = True
             if verbose:
-                logger.info('Add  {:30} with p-value {:.6}'.format(best_feature, best_pval))
+                logger.debug('Add  {:30} with p-value {:.6}'.format(best_feature, best_pval))
 
         # backward step
         model = sm.OLS(y, sm.add_constant(pd.DataFrame(X[included]))).fit()
@@ -586,7 +588,7 @@ def stepwise_selection(X, y, initial_list=[], threshold_in=0.05, threshold_out=0
             worst_feature = pvalues.idxmax()
             included.remove(worst_feature)
             if verbose:
-                logger.info('Drop {:30} with p-value {:.6}'.format(worst_feature, worst_pval))
+                logger.debug('Drop {:30} with p-value {:.6}'.format(worst_feature, worst_pval))
         if not changed:
             break
     return included
@@ -632,8 +634,8 @@ def num_cal_psi(actual_df, expect_df, columns, grp, cuts):
         psi_df['sub_psi'] = psi_df['act-exp'] * psi_df['ln(act/exp)']
         psi_df['psi'] = psi_df['sub_psi'].sum()
     except Exception as err:
-        logger.info(err)
-        logger.info(columns)
+        logger.error(err)
+        logger.debug(columns)
     #
     return psi_df[
         ['cut', 'expect_1', 'expect_rate', 'actual_1', 'actual_rate', 'act-exp', 'ln(act/exp)', 'sub_psi', 'psi']]
@@ -673,7 +675,7 @@ def num_csi_filter(df_rem, df_kq, num_df_list, y_df, df_kq_y, csi_threshold=0.25
             sel_num_df_list.append(var)
     #     logger.info('%s PSI=%f'%(var,psi))
     logger.info('csi筛选之前数值变量个数为：{}'.format(len(num_df_list)))
-    logger.info('满足csi小于等于{}的变量数：{}'.format(csi_threshold, len(sel_num_df_list)))
+    logger.debug('满足csi小于等于{}的变量数：{}'.format(csi_threshold, len(sel_num_df_list)))
     return sel_num_df_list, psi_rem_df
 
 
@@ -728,10 +730,10 @@ def cat_csi_filter(cat_features, df, df_kq, y_df, df_kq_y, psi_rem_df, csi_thres
         if psi <= csi_threshold:
             sel_cat_df_list.append(var)
         else:
-            logger.info('%s PSI=%f' % (var, psi))
+            logger.debug('%s PSI=%f' % (var, psi))
 
     logger.info('csi筛选之前类别变量个数为：{}'.format(len(sel_cat_df_list)))
-    logger.info('满足csi小于等于{}的变量数：{}'.format(csi_threshold, len(sel_cat_df_list)))
+    logger.debug('满足csi小于等于{}的变量数：{}'.format(csi_threshold, len(sel_cat_df_list)))
     return sel_cat_df_list, psi_rem_df
 
 
@@ -874,13 +876,13 @@ def lr_scored_card(lr_model,model_dir,model_features,Basepoints=600,PDO=50,odds0
     '''
 
     bins = load_sc_bins(model_dir)
-    logger.info('ODDS:{}'.format(odds0) )
-    logger.info('A/B系数：{}'.format(ab(Basepoints, odds0, PDO)) )
-    logger.info('模型特征数：{}'.format(model_features))
+    logger.debug('ODDS:{}'.format(odds0) )
+    logger.debug('A/B系数：{}'.format(ab(Basepoints, odds0, PDO)) )
+    logger.debug('模型特征数：{}'.format(model_features))
     df_card = scorecard(bins, lr_model, model_features, points0=Basepoints, odds0=odds0, pdo=PDO,
                         basepoints_eq0=False)
     logger.info('score card output.....')
-    logger.info(df_card.head())
+    logger.debug(df_card.head())
     df_card.to_csv(os.path.join(model_dir, 'score_card_report.csv'), encoding='utf8',
                             index=False)
     return df_card
@@ -1010,7 +1012,7 @@ def prob_plot(score, prob):
     plt.show()
 
 def lgbm_evaluate(X, X_test,y, **params):
-    logger.info(params)
+    logger.debug(params)
     warnings.simplefilter('ignore')
 
     params['num_leaves'] = int(params['num_leaves'])
@@ -1124,7 +1126,64 @@ def model_psi(actual_probs, expect_probs, q):
 
     return psi_values.sum()
 
-def onehot_encode(df, save_path, flag='train',prefix='n_'):
+
+import pandas as pd
+import pickle
+import os
+from sklearn.preprocessing import OneHotEncoder
+
+
+def onehot_encode(df, save_path, flag='train', prefix='n_'):
+    df_return = pd.DataFrame()
+    if flag == 'train':
+        # 训练模式下进行OneHot编码并保存编码器
+        enc = OneHotEncoder(dtype='int', handle_unknown='ignore').fit(df)
+        # 保存编码模型
+        with open(os.path.join(save_path, prefix + 'onehot.pkl'), 'wb') as save_model:
+            pickle.dump(enc, save_model)
+
+        # 进行OneHot编码并获取特征名
+        df_return = pd.DataFrame(enc.transform(df).toarray(), index=df.index)
+        df_return.columns = enc.get_feature_names(df.columns)
+
+        # 保存特征名
+        with open(os.path.join(save_path, prefix + 'onehot_features.pkl'), 'wb') as feature_file:
+            pickle.dump(df_return.columns, feature_file)
+    elif flag == 'inverse_transform':
+        # 逆变换模式下加载编码器和特征名
+        with open(os.path.join(save_path, prefix + 'onehot.pkl'), 'rb') as read_model:
+            enc = pickle.load(read_model)
+
+        with open(os.path.join(save_path, prefix + 'onehot_features.pkl'), 'rb') as feature_file:
+            encoded_columns = pickle.load(feature_file)
+            encoded_columns = list(encoded_columns)
+
+        new_columns = list(set([col.split('_')[0] for col in encoded_columns]))
+        print(new_columns)
+
+        # 确保DataFrame中存在这些列
+        if all(col in df.columns for col in encoded_columns):
+            df_return = pd.DataFrame(
+                enc.inverse_transform(df[encoded_columns].values),
+                columns=new_columns
+            )
+        else:
+            raise KeyError(f"Columns {encoded_columns} are not found in the DataFrame.")
+    else:
+        with open(os.path.join(save_path, prefix + 'onehot.pkl'), 'rb') as read_model:
+            enc = pickle.load(read_model)
+
+        with open(os.path.join(save_path, prefix + 'onehot_features.pkl'), 'rb') as feature_file:
+            encoded_columns = pickle.load(feature_file)
+
+        # 对新数据进行转换，确保列的顺序和训练时一致
+        transformed_df = pd.DataFrame(enc.transform(df).toarray(), index=df.index)
+        transformed_df.columns = encoded_columns
+
+        df_return = transformed_df
+    return df_return
+
+def onehot_encode1(df, save_path, flag='train',prefix='n_'):
     df_return = pd.DataFrame()
     if flag == 'train':
         enc = OneHotEncoder(dtype='int', handle_unknown='ignore').fit(df)
@@ -1134,6 +1193,26 @@ def onehot_encode(df, save_path, flag='train',prefix='n_'):
         save_model.close()
         df_return = pd.DataFrame(enc.transform(df).toarray(),index=df.index)
         df_return.columns = enc.get_feature_names(df.columns)
+    elif flag == 'transform':
+        read_model = open(os.path.join(save_path, prefix + 'onehot.pkl'), 'rb')
+        enc = pickle.load(read_model)
+        read_model.close()
+
+        print(df.columns)
+        encoded_columns = enc.get_feature_names(df.columns)
+
+        # 确保 DataFrame 中存在这些列
+        if all(col in df.columns for col in encoded_columns):
+            # 使用逆变换将 OneHot 编码的列转换回原始类别特征
+            df_return = pd.DataFrame(
+                enc.inverse_transform(df[encoded_columns].values),
+                columns=df.columns)  # 原始列名
+        else:
+            raise KeyError(f"Columns {encoded_columns} are not found in the DataFrame.")
+
+        # df_return = pd.DataFrame(
+        #     enc.inverse_transform(df[enc.get_feature_names()].values),
+        #     columns=df.columns)
     else:
         read_model = open(os.path.join(save_path, prefix+'onehot.pkl'), 'rb')
         enc = pickle.load(read_model)
@@ -1213,7 +1292,7 @@ def model_test_eval(model_fit,
     test_eval = evaluation_index(y_test,y_pred_test,y_score_test,thld=False)\
         .rename(columns={'评估值':flag+'_评估值'})
     # logger.info(test_eval.merge(test_eval,how='left',right_index=True,left_index=True).T)
-    logger.info(test_eval.T)
+    logger.debug(test_eval.T)
     #ROC曲线
     logger.info('ROC Curve Of {}...'.format(flag))
     sc.perf_eva(y_test,y_score_test,title=flag+'_performance',show_plot=True)
@@ -1247,7 +1326,7 @@ def model_test_eval(model_fit,
     },inplace=True)
     report_df_filter = report_df[['变量','分箱','总样本','响应样本','未响应样本','响应率','累计样本率','累计响应率','IV','KS','LIFT']]
     report_df_filter.to_csv(os.path.join(cache_dir,model_type+'_'+flag+'_report.csv'),encoding='utf8',index=False)
-    logger.info(report_df_filter.head())
+    logger.debug(report_df_filter.head())
 
     #模型评分分布
     logger.info('model distribution of {}...'.format(flag))
@@ -1259,7 +1338,7 @@ def model_test_eval(model_fit,
     PDO=50
     # odds0 = test_df[y_target].value_counts()[1] / test_df[y_target].value_counts()[0]  # 好坏比
     odds0 = test_df[y_target].value_counts()[0] / test_df[y_target].value_counts()[1]  # 好坏比
-    logger.info(test_df[y_target].value_counts())
+    logger.debug(test_df[y_target].value_counts())
     # odds0 = 20  # 好坏比 ,默认违约率假设为5% 95/5 //TODO
     test_df['score'] = test_df['y_prob'].apply(lambda x: Score(x, odds0, Basepoints=Basepoints, PDO=PDO))
 
@@ -1326,8 +1405,8 @@ def model_predict_eval(model_fit,
                     flag='test',
                     index_col=index_col)
 
-    logger.info(y_score_train.shape)
-    logger.info(y_score_test.shape)
+    logger.debug(y_score_train.shape)
+    logger.debug(y_score_test.shape)
     # model_psi_test = model_psi(y_score_test,y_test,10)
     model_psi_test = calculate_psi(y_score_train,y_score_test,10)
     logger.info('训练测试模型PSI：{}'.format(model_psi_test))
@@ -1359,7 +1438,7 @@ def read_data_by_query(engine, sql,cache_dir, need_reload_data=False, dtype=None
     cust_info_path = os.path.join(cache_dir, '{}.csv'.format(big_tablename))
 
     if need_reload_data or not os.path.exists(cust_info_path):
-        logger.info(sql)
+        logger.debug(sql)
         if index_col is not None:
             df = pd.read_sql_query(sql, con=engine, index_col=index_col)
             df.to_csv(cust_info_path, encoding='utf-8',index=True)
@@ -1403,7 +1482,7 @@ def read_data(engine, cache_dir, big_tablename, watch_point=None, need_reload_da
             query = 'select * from {} where {} >= {}'.format(big_tablename, dt_name, watch_point)
         else:
             query = 'select * from {}'.format(big_tablename)
-        logger.info(query)
+        logger.debug(query)
         if index_col is not None:
             df = pd.read_sql_query(query, con=engine,index_col=index_col).set_index(index_col)
             df.to_csv(cust_info_path, encoding='utf-8', index=True)
@@ -1492,20 +1571,20 @@ def catch_sim_or_notsim_cst(df_y,x_n_reduced, threshold=0.3, y_target='label', b
         batch = data[i:i+batch_size]
         similar_items = compute_similarity(batch,white_list,threshold=threshold,back_filter=back_filter)
         similar_row_indices = np.where(similar_items)[0] + i
-        logger.info('length of similar row indices:{}'.format(len(similar_row_indices)))
+        logger.debug('length of similar row indices:{}'.format(len(similar_row_indices)))
         all_similar_row_indices.extend(similar_row_indices)
 
     #映射回cst_id
     row_index_to_cst_id = {inx:cst_id for inx,cst_id in enumerate(unlabel_filtered_df.index)}
-    logger.info('length of all similar row indices:{}'.format(len(all_similar_row_indices)))
+    logger.debug('length of all similar row indices:{}'.format(len(all_similar_row_indices)))
     similary_cst_ids = [row_index_to_cst_id[idx] for idx in all_similar_row_indices if idx in row_index_to_cst_id]
     if back_filter:
-        logger.info('number of negative customer:{}'.format(len(similary_cst_ids)))
+        logger.debug('number of negative customer:{}'.format(len(similary_cst_ids)))
     else:
-        logger.info('number of similarity customer:{}'.format(len(similary_cst_ids)))
+        logger.debug('number of similarity customer:{}'.format(len(similary_cst_ids)))
     df_y.loc[similary_cst_ids,y_target] = '0'
-    logger.info('distribution of positive and negatice:')
-    logger.info(df_y[y_target].value_counts())
+    logger.debug('distribution of positive and negatice:')
+    logger.debug(df_y[y_target].value_counts())
     return df_y
 
 def plt_reduce_dim(X_tsne,x_label='t-SNE Component 1',y_label='t-SNE Component 2',title='t-SNE Visualization of TruncatedSVD data'):
@@ -1534,17 +1613,17 @@ def merge_dict(cache_dir,file_name='企业级用户客户标签_数据字典.xls
 
     data_dict_df = pd.read_excel(os.path.join(cache_dir,file_name),sheet_name=sheet_name)
     dict_map_df = data_dict_df[[var_en_name,var_zh_name]]
-    logger.info(dict_map_df.shape)
+    logger.debug(dict_map_df.shape)
     mobile_bank_dict_df = pd.read_excel(os.path.join(cache_dir,other_file_name))
     mobile_bank_dict_df.columns = [var_en_name,var_zh_name]
-    logger.info(mobile_bank_dict_df.shape)
+    logger.debug(mobile_bank_dict_df.shape)
     dict_all_df = pd.concat([dict_map_df,mobile_bank_dict_df],axis=0)
     dict_all_df[var_en_name] = dict_all_df[var_en_name] .str.strip()
     dict_all_df[var_zh_name] = dict_all_df[var_zh_name] .str.strip()
-    logger.info(dict_all_df.shape)
+    logger.debug(dict_all_df.shape)
     data_dict_path = os.path.join(cache_dir,'dict_all.xlsx')
     dict_all_df.to_excel(data_dict_path)
-    logger.info(dict_all_df.shape)
+    logger.debug(dict_all_df.shape)
     return data_dict_path
 
 
@@ -1579,7 +1658,7 @@ def load_all_model_features(model_dir):
     model_features = []
     with open(os.path.join(model_dir,'model_features.pickle'),'rb') as f:
         model_features = pickle.load(f)
-        logger.info('load mode success.')
+        logger.debug('load mode success.')
     return model_features
 
 def load_sc_bins(persist_dir):
@@ -1594,7 +1673,7 @@ def load_sc_bins(persist_dir):
         with open(bin_path, 'rb') as readfile:
             bins = pickle.load(readfile)
     else:
-        logger.info('sc bin not exists!')
+        logger.debug('sc bin not exists!')
 
     return bins
 
@@ -1618,7 +1697,7 @@ def cst_stat_plot(df, dt_name, title='每日点击次数趋势图', ylabel='点�
         print('total PV:', df[stats_field].sum())
         pv_clicks_per_day = df.groupby(dt_name)[stats_field].agg(['sum'])
 
-    logger.info(pv_clicks_per_day.head())
+    logger.debug(pv_clicks_per_day.head())
 
     plot_trend(x=pv_clicks_per_day.index, y=pv_clicks_per_day.values, label='PV', title=title + ' (PV)', xlabel=xlabel,
                ylabel=ylabel)
@@ -1630,7 +1709,7 @@ def cst_stat_plot(df, dt_name, title='每日点击次数趋势图', ylabel='点�
         print('total UV', df[cst_field].nunique())
         uv_clicks_per_day = df.groupby(dt_name)[cst_field].nunique()
 
-    logger.info(uv_clicks_per_day.head(20))
+    logger.debug(uv_clicks_per_day.head(20))
 
     plot_trend(uv_clicks_per_day.index, uv_clicks_per_day.values, label='UV', title=title + ' (UV)', xlabel=xlabel,
                ylabel=ylabel)
@@ -1738,7 +1817,7 @@ def output_list_by_model(path, min_lift=4):
     optimize_lift_val = max(max_lift_val,min_lift)
 
     if min_lift > bin_max_ks_val:
-        logger.info('设置lift超过最大lift，改为lift阈值自动降级为最大的一半！')
+        logger.debug('设置lift超过最大lift，改为lift阈值自动降级为最大的一半！')
         optimize_lift_val = bin_max_ks_val/2
 
     max_lift_index = max_lift_series.index[0]
@@ -1790,7 +1869,7 @@ def gmm_train(model_dir, X, gmm_need_retrain=True,model_size=7):
         with open(gmm_model_path,'rb') as readfile:
             gmm=pickle.load(readfile)
     else:
-        logger.info('请重新训练GMM模型')
+        logger.debug('请重新训练GMM模型')
     return models,gmm
 
 def jaccard_similarity(set1,set2):
@@ -1838,270 +1917,12 @@ def pairplot(df,target='target'):
     sns.pairplot(df, hue=target, diag_kind='hist')
     plt.show()
 
-def under_sample(df,y_target,desired_ratio):
-    '''
-    降采样
-    :param df:
-    :param y_target:
-    :param desired_ratio:
-    :return:
-    '''
-    # 计算正负样本的数量
-    n_class_0 = df[df[y_target] == 0].shape[0]  # 正样本
-    n_class_1 = df[df[y_target] == 1].shape[0]  # 负样本
-
-    # 检测多数类并计算降采样数量
-    if n_class_0 > n_class_1 * desired_ratio:
-        # 正样本是多数类
-        n_class_0_new = int(n_class_1 * desired_ratio)
-        df_majority_downsampled = df[df[y_target] == 0].sample(n_class_0_new, random_state=42)
-        df_minority = df[df[y_target] == 1]
-    else:
-        # 负样本是多数类
-        n_class_1_new = int(n_class_0 / desired_ratio)
-        df_majority_downsampled = df[df[y_target] == 1].sample(n_class_1_new, random_state=42)
-        df_minority = df[df[y_target] == 0]
-
-    # 合并回一个新的平衡DataFrame
-    df_balanced = pd.concat([df_minority, df_majority_downsampled])
-
-    # 可以选择洗牌DataFrame
-    # df_balanced = df_balanced.sample(frac=1, random_state=42).reset_index(drop=True)
-    df_balanced = df_balanced.sample(frac=1, random_state=42)
-    return  df_balanced
 
 
-
-
-def knn_smote_oversample(df,k_neighbors=5, y_target='target'):
-    '''
-    过采样
-    :param df:
-    :param k_neighbors:
-    :param y_target:
-    :return:
-    '''
-    from imblearn.over_sampling import SMOTE
-    target_column = y_target  # 目标变量的列名
-
-    # 分离特征和目标变量
-    X = df.drop(target_column, axis=1)
-    y = df[target_column]
-
-    # 初始化SMOTE对象
-    smote = SMOTE(k_neighbors=k_neighbors, random_state=42)  # 可以调整k_neighbors的值
-
-    # 应用SMOTE过采样
-    X_resampled, y_resampled = smote.fit_resample(X, y)
-
-    # 将过采样后的数据转换回DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[target_column] = y_resampled
-    return df_resampled
-
-    # 现在 df_resampled 是过采样后的数据集
-
-# from sklearn.datasets import make_classification
-def smote_oversample(df, y_target, positive_class_ratio):
-    """
-    根据指定的正样本比例对DataFrame进行过采样。
-
-    :param df: 原始数据集的DataFrame
-    :param target_column: 目标变量的列名
-    :param positive_class_ratio: 目标正样本比例
-    :return: 过采样后的DataFrame
-    """
-    # 分割特征和目标变量
-    X = df.drop(y_target, axis=1)
-    y = df[y_target]
-
-    # 计算当前正负样本的数量
-    n_pos = sum(y == 1)
-    n_neg = sum(y == 0)
-
-    # 计算目标正样本数量
-    target_pos = int(n_neg * positive_class_ratio / (1 - positive_class_ratio))
-
-    # 设置过采样策略
-    sampling_strategy = {1: target_pos}
-
-    # 使用SMOTE进行过采样
-    smote = SMOTE(sampling_strategy=sampling_strategy)
-    X_resampled, y_resampled = smote.fit_resample(X, y)
-
-    # 将过采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    return df_resampled
-
-
-
-
-def oversample_dataframe(df, y_target, positive_class_ratio):
-    """
-        根据指定的正样本比例对DataFrame进行过采样，并处理类别特征。
-
-        :param df: 原始数据集的DataFrame
-        :param target_column: 目标变量的列名
-        :param categorical_columns: 类别特征的列名列表
-        :param positive_class_ratio: 目标正样本比例
-        :return: 过采样后的DataFrame
-        """
-    # 对类别特征进行标签编码
-    _, _, _, cat_features, num_features = feature_classify(df, target=y_target)
-    df_encoded = df.copy()
-    encoders = {}
-    for col in cat_features:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df[col])
-        encoders[col] = encoder
-
-    # 分割特征和目标变量
-    X = df_encoded.drop(y_target, axis=1)
-    y = df_encoded[y_target]
-
-    # 计算类别的数量
-    n_pos = sum(y == 1)
-    n_neg = sum(y == 0)
-
-    # 计算并检查过采样的目标数量
-    target_pos = int(n_neg * positive_class_ratio / (1 - positive_class_ratio))
-
-    if target_pos > n_pos:
-        # 使用SMOTE进行过采样
-        smote = SMOTE(sampling_strategy=positive_class_ratio)
-        X_resampled, y_resampled = smote.fit_resample(X, y)
-    else:
-        # 如果过采样比例不合理，使用原始数据
-        logger.info('reset the sample ratio please....')
-        X_resampled, y_resampled = X, y
-
-    # 将过采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    # 反向转换类别特征
-    for col, encoder in encoders.items():
-        df_resampled[col] = encoder.inverse_transform(df_resampled[col].astype(int))
-
-    return df_resampled
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# categorical_columns = ['cat_col1', 'cat_col2']  # 字符型类别特征的列名列表
-# df_resampled = oversample_dataframe(df, 'y_target', categorical_columns, positive_class_ratio=0.5)
-
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# df_resampled = oversample_dataframe(df, 'y_target', positive_class_ratio=0.5)
-
-
-# 创建一个不平衡的数据集作为示例
-# X, y = make_classification(n_classes=2, class_sep=2, weights=[0.1, 0.9],
-#                            n_informative=3, n_redundant=0, flip_y=0,
-#                            n_features=20, n_clusters_per_class=1,
-#                            n_samples=1000, random_state=10)
-
-
-
-
-
-def mixed_sampling(df,  oversample_strategy=0.2, undersample_strategy=0.5,y_target='target'):
-    """
-    对DataFrame进行混合采样。
-
-    :param df: 原始数据集的DataFrame
-    :param target_column: 目标变量的列名
-    :param oversample_strategy: 过采样策略
-    :param undersample_strategy: 欠采样策略
-    :return: 混合采样后的DataFrame
-    """
-    # 分割特征和目标变量
-    X = df.drop(y_target, axis=1)
-    y = df[y_target]
-
-    # 配置SMOTE过采样和RandomUnderSampler欠采样
-    over = SMOTE(sampling_strategy=oversample_strategy)
-    under = RandomUnderSampler(sampling_strategy=undersample_strategy)
-
-    # 创建采样管道
-    pipeline = Pipeline(steps=[('o', over), ('u', under)])
-
-    # 应用管道进行采样
-    X_resampled, y_resampled = pipeline.fit_resample(X, y)
-
-    # 将采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    return df_resampled
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# df_resampled = mixed_sampling(df, 'y_target', oversample_strategy=
-
-
-
-def mixed_sampling_with_categorical(df,oversample_strategy=0.2, undersample_strategy=0.5,y_target='target'):
-    # 对类别特征进行标签编码
-    _, _, _, cat_features, num_features = feature_classify(df, target=y_target)
-    # 对类别特征进行标签编码
-    df_encoded = df.copy()
-    encoders = {}
-    for col in cat_features:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df[col])
-        encoders[col] = encoder
-
-    # 分割特征和目标变量
-    X = df_encoded.drop(y_target, axis=1)
-    y = df_encoded[y_target]
-
-    # 计算类别的数量
-    n_pos = sum(y == 1)
-    n_neg = sum(y == 0)
-
-    # 计算并检查过采样和欠采样的目标数量
-    target_pos_oversample = int(n_neg * oversample_strategy)
-    target_neg_undersample = int(target_pos_oversample * (1 / undersample_strategy))
-
-    if target_pos_oversample > n_pos and target_neg_undersample < n_neg:
-        # 使用SMOTE过采样和RandomUnderSampler欠采样
-        over = SMOTE(sampling_strategy=oversample_strategy)
-        under = RandomUnderSampler(sampling_strategy=undersample_strategy)
-
-        # 创建采样管道
-        pipeline = Pipeline(steps=[('o', over), ('u', under)])
-
-        # 应用管道进行采样
-        X_resampled, y_resampled = pipeline.fit_resample(X, y)
-    else:
-        # 如果采样比例不合理，使用原始数据
-        logger.info('reset the sample ratio please....')
-        X_resampled, y_resampled = X, y
-
-    # 将采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    # 反向转换类别特征
-    for col, encoder in encoders.items():
-        df_resampled[col] = encoder.inverse_transform(df_resampled[col].astype(int))
-
-    return df_resampled
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# categorical_columns = ['cat_col1', 'cat_col2']  # 字符型类别特征的列名列表
-# df_resampled = mixed_sampling_with_categorical(df, 'y_target', categorical_columns, oversample_strategy=0.1, undersample_strategy=0.5)
-
-#plot
 
 def circle_distrib(df_dis,labels=['负样本', '正样本']):
     my_circle = plt.Circle((0, 0), 0.7, color='white')
-    plt.pie(df_dis, labels=labels, colors=['red', 'green'], autopct='%1.1f%%')
+    plt.pie(df_dis, labels=labels, colors=['blue', 'yellow'], autopct='%1.1f%%')
     p = plt.gcf()
     p.gca().add_artist(my_circle)
     plt.show()

@@ -100,7 +100,7 @@ class LocalDataset(Dataset):
     def write_by_df(self,df):
         wirte_path = os.path.join(self.model_dir, '{}.csv'.format(self.file_name))
         df.to_csv(wirte_path, encoding='utf8', index=False)
-        logger.info('写入：{}.csv成功！'.format(wirte_path))
+        logger.debug('写入：{}.csv成功！'.format(wirte_path))
 
 class SQLDataset(Dataset):
     def __init__(self, warehouse,
@@ -129,7 +129,7 @@ class SQLDataset(Dataset):
             df = read_data_by_query(self.engine,sql,self.cache_dir,need_reload_data=self.need_reload_data,dtype=self.dtype,index_col=self.index_col)
         else:
             for inx,sql in enumerate(self.sqls):
-                logger.info('{},{}'.format(inx+1,sql))
+                logger.debug('{},{}'.format(inx+1,sql))
                 tmp_df=read_data_by_query(self.engine,sql,self.cache_dir,need_reload_data=self.need_reload_data,dtype=self.dtype,index_col=self.index_col)
                 if df is not None:
                     df = pd.merge(df,tmp_df,left_index=True,right_index=True,how='left')
@@ -139,7 +139,7 @@ class SQLDataset(Dataset):
 
         if self.rename_columns is not None:
             df.rename(columns=self.rename_columns,inplace=True)
-        logger.info(df.shape)
+        logger.debug(df.shape)
         return df
 
     def write_by_df(self,df,if_exists='replace'):

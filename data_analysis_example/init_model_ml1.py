@@ -100,9 +100,10 @@ min_value_count = 50 #类别变量最低要求频数
 
 #IV
 bin_method = 'chimerge' #分箱方法，tree | chimerge 决策树或卡方分箱
-min_iv_limit=0.02
-# min_iv_limit=0.001
-max_iv_limit=0.5
+# min_iv_limit=0.02
+min_iv_limit=0.000
+# max_iv_limit=0.6
+max_iv_limit=0.9
 # max_iv_limit=1000
 
 max_num_bin = 5 #最大分箱数
@@ -121,11 +122,14 @@ forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
 # forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
 forest_select_max_depth=3 #树的最大深度
 
-use_woe = False #使用woe编码
+# rorestFeatureProcess = ForestFeatureProcess(miss_rate=miss_rate,corr_threhold=corr_threshold,
+#                          forest_select_cumutative_importance=forest_select_cumulative_importance,
+#                          max_depth=forest_select_max_depth,y_target=y_target)
+rorestFeatureProcess = None
 
 #过采样、降采样配置
-imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案under_sample、 over_sample、mix_sample
-                                     desired_ratio=4, #降采样或者让过采样正负样本比例，只在imbalance_type='under_sample'或者imbalance_type='over_sample'时有效
+imbalance_process = ImbalanceProcess(imbalance_type='over_sample',#采样方案:under_sample、 over_sample、mix_sample
+                                     desired_ratio=1/4, #目标降采样或者过采样后少数样本占多数样本比例
                                      oversample_strategy=0.5,#只在imbalance_type='mix_sample'生效，过采样比例，如0.2代表采样后少数类样本占比多数类样本的20%
                                      undersample_strategy=0.5,#只在imbalance_type='mix_sample'生效，将采样比例，如0.5代表采样后多数类样本是少数类样本的2倍
                                      y_target=y_target)
@@ -186,9 +190,7 @@ double_feature_process = [
                      model_dir=model_dir, y_target=y_target),
     CorrFeatureProcess(corr_threshold=corr_threshold, y_target=y_target),
     CSIFeatureProcess(csi_threshold=csi_threshold, model_dir=model_dir, y_target=y_target),
-    ForestFeatureProcess(miss_rate=miss_rate,corr_threhold=corr_threshold,
-                         forest_select_cumutative_importance=forest_select_cumulative_importance,
-                         max_depth=forest_select_max_depth,y_target=y_target),
+    rorestFeatureProcess,
     imbalance_process
 ]
 

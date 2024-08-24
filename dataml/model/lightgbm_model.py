@@ -68,7 +68,7 @@ class LightGBMModel(BaseModel):
             feature_imp = feature_imp.merge(iv_df,how='left',left_on=self.var_en_name,right_on='variable')
         logger.info('输出特征重要性')
         feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].to_csv(os.path.join(data_dir,'lgb_feature_importance.csv'))
-        logger.info(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
+        logger.debug(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
         return  feature_imp,data_map
 
 
@@ -84,7 +84,7 @@ class LightGBMModel(BaseModel):
             logger.info('没有特征解释器！')
         else:
             for explain_model in self.explain_models:
-                logger.info(explain_model)
+                logger.debug(explain_model)
                 explain_model.var_explain(model_fit=self.model_fit,X=X_test,y=y_test,data_dict=data_map,exlpain_type='tree')
 
     def train(self, X, y):
@@ -106,7 +106,7 @@ class LightGBMModel(BaseModel):
         with open(os.path.join(model_dir,encoder_type+'_lgb_model.pickle'),'wb') as f:
             # pickle.dump(self.model_fit,f)
             pickle.dump(self.model,f)
-            logger.info('LightGBM模型保存成功！')
+            logger.debug('LightGBM模型保存成功！')
 
     def evaluate_test(self,
                       X_test,
@@ -115,9 +115,9 @@ class LightGBMModel(BaseModel):
                       cache_dir=None,
                       flag='test',
                       index_col='cst_id'):
-        logger.info(self.name)
+        logger.debug(self.name)
         if self.model_fit is None:
-            logger.info('please load model first using self.load(model_dir)')
+            logger.debug('please load model first using self.load(model_dir)')
             return None, None, None
         else:
             y_score_test,y_pred_test,test_df = model_test_eval(self.model_fit,
@@ -142,7 +142,7 @@ class LightGBMModel(BaseModel):
                  index_col='cst_id'):
         logger.info(self.name)
         if self.model_fit is None:
-            logger.info('请先使用self.load(model_dir)加载模型！')
+            logger.debug('请先使用self.load(model_dir)加载模型！')
             return None,None,None
         else:
             y_score_test,y_pred_test,test_df=model_predict_eval(self.model_fit,

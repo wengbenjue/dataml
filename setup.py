@@ -5,7 +5,7 @@ _PATH_ROOT = os.path.dirname(__file__)
 
 setup(
     name="dataml",
-    version="0.1.6",
+    version="1.0.1",
     description="data analysis machine learning",
     author="",
     url="",
@@ -34,7 +34,8 @@ setup(
         "colorama==0.4.5",
         "bayesian-optimization==1.4.1",
         "imbalanced-learn==0.8.0",
-        "wordcloud==1.9.3"
+        "wordcloud==1.9.3",
+        "colorlog==6.8.2",
     ],
     packages=find_packages(),
     long_description_content_type="",

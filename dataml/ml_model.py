@@ -177,23 +177,27 @@ class MLModel:
 
         if uni_feature_process is not None:
             for feature_process in uni_feature_process:
-                feature_process.model_dir = self.model_dir
-                feature_process.cache_dir = self.cache_dir
+                if feature_process is not None:
+                    feature_process.model_dir = self.model_dir
+                    feature_process.cache_dir = self.cache_dir
 
         if double_feature_process is not None:
             for feature_process in double_feature_process:
-                feature_process.model_dir = self.model_dir
-                feature_process.cache_dir = self.cache_dir
+                if feature_process is not None:
+                    feature_process.model_dir = self.model_dir
+                    feature_process.cache_dir = self.cache_dir
 
         if csi_feature_process is not None:
             for feature_process in csi_feature_process:
-                feature_process.model_dir = self.model_dir
-                feature_process.cache_dir = self.cache_dir
+                if feature_process is not None:
+                    feature_process.model_dir = self.model_dir
+                    feature_process.cache_dir = self.cache_dir
 
         if oot_feature_process is not None:
             for feature_process in oot_feature_process:
-                feature_process.model_dir = self.model_dir
-                feature_process.cache_dir = self.cache_dir
+                if feature_process is not None:
+                    feature_process.model_dir = self.model_dir
+                    feature_process.cache_dir = self.cache_dir
 
         if feature_encoder is not None:
             feature_encoder.model_dir = self.model_dir
@@ -280,7 +284,7 @@ class MLModel:
 
         if mode !='pred' and mode != 'predict':
             logger.info('sample distribution.')
-            logger.info(df_y[self.y_target].value_counts())
+            logger.debug(df_y[self.y_target].value_counts())
 
         logger.info(df_all.shape)
 
@@ -289,7 +293,7 @@ class MLModel:
             logger.info('Sample Distribution Before Feature Process:')
             y_df = df_y[self.y_target]
             y_distribution = y_df.value_counts()
-            logger.info(y_distribution)
+            logger.debug(y_distribution)
             converted = y_distribution.rename_axis('unique_values').to_frame('counts')
             # plot the distribution
             circle_distrib(df_dis=converted.counts, labels=['negative', 'positive'])
@@ -334,10 +338,21 @@ class MLModel:
         X = self.feature_encoding(X, model='train')
         X_test = self.feature_encoding(X_test, model='test')
 
+        X.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # 使用列的平均值替换 NaN 值
+        X.fillna(X.mean(), inplace=True)
+
+        X_test.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # 使用列的平均值替换 NaN 值
+        X_test.fillna(X_test.mean(), inplace=True)
+
+        self.feature_encoder.persist(X,y,target=self.y_target,model_type='train')
+        self.feature_encoder.persist(X_test, y_test, target=self.y_target, model_type='test')
+
         logger.info('训练集特征维数：')
-        logger.info(X.shape)
+        logger.debug(X.shape)
         logger.info('测试集特征维数：')
-        logger.info(X_test.shape)
+        logger.debug(X_test.shape)
 
         gc.collect()
         gc.collect()
@@ -351,7 +366,10 @@ class MLModel:
 
         for model in filter_models:
             logger.info('{} training'.format(model.name))
+
+
             model.train(X,y)
+
             model.persist(self.model_dir,encoder_type=self.encoder_type)
             #model evalueate
             y_score_test,y_pred_test,test_df = model.evaluate(
@@ -469,7 +487,7 @@ class MLModel:
         X = self.feature_encoding(df, model='test')
         gc.collect()
         gc.collect()
-        logger.info(X.shape)
+        logger.debug(X.shape)
         return X, pred_df, fea_df
 
     def predict(self, model_type='lgb',encoder_type='onehot'):
@@ -569,17 +587,17 @@ class MLModel:
         # caculate similarity
         catch_sim_or_notsim_cst(df_y, x_n_reduced, threshold=negative_sim_threshold, y_target=y_target,
                                 back_filter=back_filter, positive_label=1, unlablel_label=-1)
-        logger.info(df_y.shape)
+        logger.debug(df_y.shape)
 
         df_y[self.y_target] = df_y[self.y_target].astype(int)
         df[self.y_target] = df_y[self.y_target]
 
         df_unlabel = df[df[self.y_target] == -1]
-        logger.info('shape of unlabel dataframe:{}'.format(df_unlabel.shape) )
+        logger.debug('shape of unlabel dataframe:{}'.format(df_unlabel.shape) )
         df = df[df[self.y_target] != -1]
         y_df = df[self.y_target]
         y_df = y_df.astype(int)
-        logger.info('shape of df dataframe:{}'.format(df.shape) )
+        logger.debug('shape of df dataframe:{}'.format(df.shape) )
 
     def plot_feature_corr(self,df,feature_result):
         """
@@ -613,7 +631,8 @@ class MLModel:
             #uni-variable filter
             if len(self.uni_feature_process) >0:
                 for feature_proc_obj in self.uni_feature_process:
-                    df,_ = feature_proc_obj.process(df,df1=None,df2=None,mode='train')
+                    if feature_proc_obj is not None:
+                        df,_ = feature_proc_obj.process(df,df1=None,df2=None,mode='train')
 
             gc.collect()
             gc.collect()
@@ -638,16 +657,18 @@ class MLModel:
                     csi_var_d_flag = False
                     if len(self.csi_feature_process) >0:
                         for feature_proc_obj in self.csi_feature_process:
-                            if isinstance(feature_proc_obj,VarDerivaticeFeatureProcess):
-                                csi_var_d_flag = True
+                            if feature_proc_obj is not None:
+                                if isinstance(feature_proc_obj,VarDerivaticeFeatureProcess):
+                                    csi_var_d_flag = True
                         if not csi_var_d_flag:
                             df2 = df2[list(df.columns)]
 
                         if len(self.csi_feature_process) >0:
                             for feature_proc_obj in self.csi_feature_process:
-                                df2, _ = feature_proc_obj.process(df2, df1=None, df2=None, mode='test')
-                                if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
-                                    df2 = df2[list(df.columns)]
+                                if feature_proc_obj  is not None:
+                                    df2, _ = feature_proc_obj.process(df2, df1=None, df2=None, mode='test')
+                                    if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
+                                        df2 = df2[list(df.columns)]
 
                     gc.collect()
                     gc.collect()
@@ -682,9 +703,10 @@ class MLModel:
 
                 df[self.y_target] = y_df
                 for feature_proc_obj in self.double_feature_process:
-                    df, df1 = feature_proc_obj.process(df, df1=df1, df2=df2, mode='train')
-                    gc.collect()
-                    gc.collect()
+                    if feature_proc_obj is not None:
+                        df, df1 = feature_proc_obj.process(df, df1=df1, df2=df2, mode='train')
+                        gc.collect()
+                        gc.collect()
                 feature_result = list(df.columns)
                 # if self.y_target in feature_result:
                 #     feature_result.remove(self.y_target)
@@ -704,17 +726,19 @@ class MLModel:
             csi_var_d_flag = False
             if len(self.oot_feature_process) >0:
                 for feature_proc_obj in self.oot_feature_process:
-                    if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
-                        csi_var_d_flag = True
+                    if feature_proc_obj is not None:
+                        if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
+                            csi_var_d_flag = True
                 if not csi_var_d_flag:
                     df = df[self.model_features]
 
                 for feature_proc_obj in self.oot_feature_process:
-                    df,_ = feature_proc_obj.process(df,df1=None,df2=None,mode='test')
-                    if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
-                        df = df[self.model_features]
-                    gc.collect()
-                    gc.collect()
+                    if feature_proc_obj is not None:
+                        df,_ = feature_proc_obj.process(df,df1=None,df2=None,mode='test')
+                        if isinstance(feature_proc_obj, VarDerivaticeFeatureProcess):
+                            df = df[self.model_features]
+                        gc.collect()
+                        gc.collect()
 
                 if mode != 'pred' and mode != 'predict':
                     if self.need_recall_negative:
@@ -732,7 +756,7 @@ class MLModel:
                 feature_result = self.model_features
 
             logger.info('number of final features:'.format(len(feature_result)))
-            logger.info(feature_result)
+            logger.debug(feature_result)
 
         self.plot_feature_corr(df,feature_result)
         #load iv
@@ -742,7 +766,7 @@ class MLModel:
         if y_df is not None and len(y_df)>0:
             logger.info('Sample Distribution After Feature Process:')
             y_distribution = y_df.value_counts()
-            logger.info(y_distribution)
+            logger.debug(y_distribution)
             converted = y_distribution.rename_axis('unique_values').to_frame('counts')
             # plot the distribution
             circle_distrib(df_dis=converted.counts, labels=['negative', 'positive'])
@@ -773,7 +797,7 @@ class MLModel:
         logger.info('length of train:{}'.format(X.shape))
         logger.info('length of test:{}'.format(X_test.shape))
         logger.info('train sample distribution:')
-        logger.info(y.value_counts())
+        logger.debug(y.value_counts())
 
         with open(os.path.join(self.model_dir,'model_features.pickle'),'wb') as f:
             pickle.dump(model_features,f)
@@ -844,7 +868,7 @@ class MLModel:
                 model_psi_oot = calculate_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
                 # model_psi_oot = calculate_psi_histogram(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
                 # model_psi_oot = model_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
-                logger.info('outtime model psi:{}'.format(model_psi_oot))
+                logger.debug('outtime model psi:{}'.format(model_psi_oot))
                 return model_psi_oot
 
     def output_list(self, model_type=None, min_lift=None,encoder_type='onehot'):
@@ -932,14 +956,14 @@ class MLModel:
                 model_pred_df[self.index_col] = model_pred_df[self.index_col].astype(int)
                 usr_profile_df[self.index_col] = usr_profile_df[self.index_col].astype(int)
                 model_pred_df = pd.merge(model_pred_df,usr_profile_df,on=self.index_col,how='left')
-                logger.info(model_pred_df.head(3).T)
+                logger.debug(model_pred_df.head(3).T)
             except Exception as err:
-                logger.info(err)
+                logger.error(err)
 
             #write to database
             model_pred_df.to_csv(os.path.join(self.model_dir,'cst_score_list.csv'),encoding='utf8',index=False)
             logger.info('output list:')
-            logger.info(model_pred_df.head())
+            logger.debug(model_pred_df.head())
             logger.info('write output list to databse!')
             if self.out_dataset is not None:
                 self.out_dataset.write_by_df(model_pred_df)
@@ -972,7 +996,7 @@ class MLModel:
         plt.show()
 
         bic_df = pd.DataFrame(bic_list, columns=['BIC'])
-        logger.info(bic_df.head())
+        logger.debug(bic_df.head())
 
         best_cluster_length = bic_df['BIC'].sort_values(ascending=True).index[0]
         gmm = models[best_cluster_length]
@@ -1022,7 +1046,7 @@ class MLModel:
         cluster_mean_df = cluster_df.groupby(['cluster'])[num_features].mean()
         num_tgi_df = cluster_mean_df/cluster_df[num_features].mean()
         logger.info('tgi for number variable')
-        logger.info(num_tgi_df.head())
+        logger.debug(num_tgi_df.head())
         #tgi for category numbers
         cat_tar_features = cat_features+['label','cluster']
         cat_df = cluster_df[cat_tar_features]
@@ -1051,7 +1075,7 @@ class MLModel:
 
         new_tgi_df = tgi_df.T
         new_tgi_df.colulmns = tgi_columns
-        logger.info(new_tgi_df.head())
+        logger.debug(new_tgi_df.head())
 
         plt.figure(figsize=(16,10))
         sns.heatmap(tgi_df,annot=True,cmap='RdBu_r')
@@ -1060,9 +1084,9 @@ class MLModel:
         cluster_usr_profile_list = []
 
         for col in list(new_tgi_df.columns):
-            logger.info('#################################################')
+            logger.debug('#################################################')
             cluster_tgi_df = new_tgi_df[new_tgi_df[col] > tgi_threshold].sort_values(by=col,ascending=False)
-            logger.info(cluster_tgi_df[col])
+            logger.debug(cluster_tgi_df[col])
             target_features = list(cluster_tgi_df[col].index)
 
             #caculate jaccard similarity
@@ -1071,7 +1095,7 @@ class MLModel:
             for rule in self.user_profile_label_rules:
                 keywords,label_words = rule[0],rule[1]
                 sim = jaccard_similarity(set(keywords),set(target_features))
-                logger.info(sim)
+                logger.debug(sim)
 
                 if sim >= best_sim:
                     best_sim = sim
@@ -1079,15 +1103,15 @@ class MLModel:
 
             if best_sim < 1.1 and best_sim > 0.6:
                 cluster_usr_profile_list.append([col,best_keywords])
-            logger.info('#################################################')
-            logger.info(cluster_usr_profile_list)
+            logger.debug('#################################################')
+            logger.debug(cluster_usr_profile_list)
 
             if len(cluster_usr_profile_list) >0:
                 #user profile labelling finished.
                 cluster_usr_profile_df = pd.DataFrame(cluster_usr_profile_list,columns=['cluster','profile_features'])
                 cluster_usr_profile_df.to_csv(os.path.join(self.cache_dir,'group_profile.csv'),encoding='utf8')
                 logger.info('user profile labelling finished')
-                logger.info(cluster_usr_profile_df.head())
+                logger.debug(cluster_usr_profile_df.head())
 
             new_tgi_df.reset_index().to_csv(os.path.join(self.cache_dir,'user_importance_feature_tgi.csv'),encoding='utf8')
             return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_usr_profile_df
@@ -1107,7 +1131,7 @@ class MLModel:
         cluster_df_c['cluster'] = cluster_df_c['cluster'].astype(int)
         cluster_usr_profile_df['cluster'] = cluster_usr_profile_df['cluster'].astype(int)
         cluster_df_c = pd.merge(cluster_df_c,cluster_usr_profile_df,on='cluster',how='left')
-        logger.info(cluster_df_c.head())
+        logger.debug(cluster_df_c.head())
         for col in new_tgi_df.columns:
             feature_tgi_df = new_tgi_df[[col]].copy()
             feature_tgi_df.columns = ['TGI']
