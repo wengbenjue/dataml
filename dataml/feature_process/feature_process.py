@@ -15,7 +15,7 @@ from ..util.utils import clean_text
 from typing import List
 import sys
 import gc
-print(sys.executable)
+# print(sys.executable)
 import warnings
 
 
@@ -83,11 +83,17 @@ class VarDropFeatureProcess(UniFeatureProcess):
     def process(self, df, df1=None, df2=None, mode='train'):
         if self.drop_columns is not None:
             if isinstance(self.drop_columns,list):
-                df =df.drop(columns=self.drop_columns)
+                try:
+                    df =df.drop(columns=self.drop_columns)
+                except:
+                    pass
             elif isinstance(self.drop_columns,str):
-                drop_cols = df.columns[df.columns.str.contains(self.drop_columns)]
-                df = df.drop(columns=drop_cols)
-            print(self.name,df.shape)
+                try:
+                    drop_cols = df.columns[df.columns.str.contains(self.drop_columns)]
+                    df = df.drop(columns=drop_cols)
+                except:
+                    pass
+            logger.debug('{},{}'.format(self.name, df.shape))
             return df, None
 
 class VarDerivaticeFeatureProcess (UniFeatureProcess):
@@ -116,7 +122,7 @@ class CatClusterValueFeatureProcess (UniFeatureProcess):
     def process(self, df, df1=None, df2=None, mode='train'):
          _,_,_,cat_features,num_features=feature_classify(df,target=self.y_target)
          for f in cat_features:
-             print('{},{},{}'.format(f, '类型数：', df[f].nunique()))
+             logger.debug('{},{},{}'.format(f, '类型数：', df[f].nunique()))
          df[cat_features] = df[cat_features].fillna('Unknown')
          df[cat_features] = df[cat_features].replace(np.nan,'Unknown')
          df[cat_features] = df[cat_features].replace('nan','Unknown')

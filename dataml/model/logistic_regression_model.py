@@ -12,7 +12,7 @@ from ..util.my_logging import logger
 class LogisticRegressionModel(BaseModel):
     def __init__(self, explain_models: List[BaseFeatureExplain],
                  class_weight='balanced',max_iter=200,C=0.5,class_weights=[{1: 1.0,0: 1.0}, {1:2.0,0:1.0}],
-                 params_optimize=False,Basepoints=600,PDO=20,use_woe=False,model_dir=None):
+                 params_optimize=False,Basepoints=600,PDO=20,use_woe=False,model_dir=None,params=None):
         self.explain_models = explain_models
         self.class_weight = class_weight
         self.class_weights = class_weights
@@ -25,6 +25,7 @@ class LogisticRegressionModel(BaseModel):
         self.PDO = PDO
         self.model_dir = model_dir
         self.use_woe = use_woe
+        self.params = params
 
 
         self.params_optimize = params_optimize
@@ -34,7 +35,10 @@ class LogisticRegressionModel(BaseModel):
                 'solver': 'liblinear',
                 'class_weight':self.class_weight,
                 'max_iter': self.max_iter}
-        self.params_new.update(best_params)
+        if self.params is None:
+            self.params_new.update(best_params)
+        else:
+            self.params_new.update(self.params)
         logger.debug(self.params_new)
 
         self.model = LogisticRegression(random_state=0,C=self.params_new['C'],penalty=self.params_new['penalty'],

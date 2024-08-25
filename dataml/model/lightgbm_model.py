@@ -18,7 +18,7 @@ class LightGBMModel(BaseModel):
                  name='LightGBM模型',
                  var_en_name=None,
                  sheet_name='Sheet1',
-                 var_zh_name=None):
+                 var_zh_name=None,params=None):
         self.explain_models = explain_models
         self.params_optimize = params_optimize
         self.model_type = 'lgb'
@@ -26,16 +26,18 @@ class LightGBMModel(BaseModel):
         self.var_en_name = var_en_name
         self.var_zh_name = var_zh_name
         self.sheet_name = sheet_name
+        self.params = params
 
         if self.var_en_name is None:
             self.var_en_name = 'index'
         if self.var_zh_name is None:
             self.var_zh_name = 'index'
 
-        self.params = {'application': 'binary', 'num_iterations':100, 'learning_rate':0.05, 'n_estimators':200, 'num_leaves':48, 'device':'cpu',
-         'max_depth':7, 'boosting':'gbdt', 'objective':['binary'], 'max_bin':510, 'lambda_l1':5, 'lambda_l2':10, 'metric':'binary_error',
-         'subsample_for_bin':200, 'random_state':500, 'colsample_bytree':0.53, 'subsample':0.8, 'min_split_gain':5, 'min_child_weight':0.01,
-         'min_child_samples':313, 'reg_alpha': 1, 'reg_lambda':2, 'sumsample':0.88, 'scale_pos_weight':1.0}
+        if self.params is None:
+            self.params = {'application': 'binary', 'num_iterations':100, 'learning_rate':0.05, 'n_estimators':200, 'num_leaves':48, 'device':'cpu',
+             'max_depth':7, 'boosting':'gbdt', 'objective':['binary'], 'max_bin':510, 'lambda_l1':5, 'lambda_l2':10, 'metric':'binary_error',
+             'subsample_for_bin':200, 'random_state':500, 'colsample_bytree':0.53, 'subsample':0.8, 'min_split_gain':5, 'min_child_weight':0.01,
+             'min_child_samples':313, 'reg_alpha': 1, 'reg_lambda':2, 'sumsample':0.88, 'scale_pos_weight':1.0}
 
         self.model = lgb.LGBMClassifier(
                                     n_jobs=-1

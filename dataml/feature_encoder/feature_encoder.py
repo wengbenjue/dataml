@@ -76,7 +76,7 @@ class WoeEncoder(FeatureEncoder):
 
         data_woe_df = sc.woebin_ply(X, bins)
         logger.info(data_woe_df.shape)
-        # logger.info(data_woe_df.head())
+        logger.debug(data_woe_df.head(3))
         return data_woe_df
 
 

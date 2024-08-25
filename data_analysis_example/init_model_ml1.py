@@ -129,18 +129,30 @@ rorestFeatureProcess = None
 
 #过采样、降采样配置
 imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
-                                     desired_ratio=1/4, #目标降采样或者过采样后少数样本占多数样本比例
-                                     under_desired_ratio=1/2,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
+                                     desired_ratio=1, #目标降采样或者过采样后少数样本占多数样本比例
+                                     under_desired_ratio=1/4,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
                                      y_target=y_target)
 
 
 #模型参数
-
 #类别权重 逻辑回归
 class_weight= 'balanced'
 class_weights= [{1:1.0,0:1.0},{1:2.0,0:1.0}]
 #是否需要超参优化
 params_optimize=False
+
+lr_params ={'C': 0.5,
+                'penalty': 'l1',
+                'solver': 'liblinear',
+                'class_weight':class_weight,
+                'max_iter': 200}
+lgb_params = {'application': 'binary', 'num_iterations':100, 'learning_rate':0.05, 'n_estimators':200, 'num_leaves':48, 'device':'cpu',
+             'max_depth':7, 'boosting':'gbdt', 'objective':['binary'], 'max_bin':510, 'lambda_l1':5, 'lambda_l2':10, 'metric':'binary_error',
+             'subsample_for_bin':200, 'random_state':500, 'colsample_bytree':0.53, 'subsample':0.8, 'min_split_gain':5, 'min_child_weight':0.01,
+             'min_child_samples':313, 'reg_alpha': 1, 'reg_lambda':2, 'sumsample':0.88, 'scale_pos_weight':1.0}
+
+
+
 
 #评分卡参数
 Basepoints=600 #评分卡基础分
@@ -231,8 +243,9 @@ mlModel=MLModel(
     ,out_dataset= LocalDataset(data_path=train_file_path, index_col=index_col,dtype=dtype,file_name=outputlist_filename,model_dir=model_dir,y_target=y_target)
     ,cst_base_info_dataset =LocalDataset(data_path=train_file_path, index_col=index_col,y_target=y_target)
     ,models=[LogisticRegressionModel(explain_models=lr_explain_models, class_weight=class_weight,
-                                    class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,model_dir=model_dir,params_optimize=params_optimize)
-            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize)]
+                                    class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,
+                                     model_dir=model_dir,params_optimize=params_optimize,params=lr_params)
+            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize,params=lgb_params)]
     ,uni_feature_process = uni_feature_process
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process

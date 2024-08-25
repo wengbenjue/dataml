@@ -26,7 +26,7 @@ from .util.utils import merge_dict,prob_distplot,feature_classify,onehot_encode
 from .util.utils import CustomScaler,gmm_train,output_list_by_model,catch_sim_or_notsim_cst,load_all_model_features
 from .util.utils import plot_corr,plot_histogram,model_psi,calculate_psi,calculate_psi_histogram,jaccard_similarity
 from .util.utils import lr_scored_card
-from .util.utils import circle_distrib,plot_distribuion,generate_short_uuid,tgi_wordcloud
+from .util.utils import circle_distrib,plot_distribuion,generate_short_uuid,tgi_wordcloud,tgi_wordcloud_en
 from .feature_process import VarDerivaticeFeatureProcess
 from .feature_encoder import FeatureEncoder,OnehotEncoder,WoeEncoder
 logger.info(sys.executable)
@@ -143,7 +143,7 @@ class MLModel:
             # self.model_instance = uuid.uuid4()
             # self.model_instance = str(uuid.uuid4())[:8]
             self.model_instance = generate_short_uuid()
-            print('automatic generate model instance id:{}'.format(self.model_instance))
+            logger.debug('automatic generate model instance id:{}'.format(self.model_instance))
 
         self.model_dir = os.path.join(self.model_dir,self.model_instance)
         self.cache_dir = os.path.join(self.cache_dir,self.model_instance)
@@ -390,7 +390,7 @@ class MLModel:
 
     def outtime(self, model_type=None,encoder_type='onehot'):
         ...
-        print('模型预测开始...')
+        logger.info('model predict starting...')
         self.load_model_features()
         model_pred_result = []
         df, df_y = self.load_data(self.oot_dataset,mode='oot', source='oot')
@@ -416,7 +416,7 @@ class MLModel:
 
         gc.collect()
 
-        print(X.shape)
+        logger.debug(X.shape)
 
 
         # 模型预测结果输出
@@ -831,7 +831,7 @@ class MLModel:
             if filter_imp_df is None or len(filter_imp_df) ==0:
                 filter_features = self.model_features
             else:
-                print(filter_imp_df.head())
+                logger.debug(filter_imp_df.head())
                 try:
                     filter_features = list(filter_imp_df[self.var_en_name].values)
                 except:
@@ -895,7 +895,7 @@ class MLModel:
         logger.info('number of model for output list.')
 
         for model in filter_models:
-            print('{}output list'.format(model.name))
+            logger.debug('{}output list'.format(model.name))
             # Model prediction dataframe copy
             model_pred_df = pred_df.copy()
             model.load(self.model_dir,encoder_type=self.encoder_type)
@@ -1017,7 +1017,7 @@ class MLModel:
             plt.scatter(x_n_reduced[:,0],x_n_reduced[:,1],c=pred_labels,s=40,cmap='viridis')
             plt.show()
         except Exception as e:
-            print(e)
+            logger.error(e)
             pass
 
         cluster_df['cluster'] = pred_labels
@@ -1141,7 +1141,10 @@ class MLModel:
             try:
                 tgi_wordcloud(feature_tgi_df)
             except Exception as e:
-                print(e)
+                try:
+                    tgi_wordcloud_en(feature_tgi_df)
+                except Exception as e:
+                    logger.error(e)
 
         cluster_df_c[[self.index_col,'cluster','profile_features']].to_csv(os.path.join(self.cache_dir,'cluster_usr_profile.csv'),encoding='utf8',index=True)
         return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_df_c

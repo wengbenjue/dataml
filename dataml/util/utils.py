@@ -451,8 +451,41 @@ def quartile_filter(num_df_list, df):
     return num_df_list
 
 
-# Lift图
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import scoreatpercentile
+
+
 def lift_cure(y_val, probs):
+    result = pd.DataFrame({'tg': y_val, 'proba': probs})
+    proba_copy = result.proba.copy()
+
+    for i in range(10):
+        point1 = scoreatpercentile(result.proba, i * (100 / 10))
+        point2 = scoreatpercentile(result.proba, (i + 1) * (100 / 10))
+        proba_copy[(result.proba >= point1) & (result.proba <= point2)] = (10 - i)
+
+    result['grade'] = proba_copy
+    df_gain = result.groupby(['grade'])['tg'].agg(['sum', 'count'])
+    df_gain['Lift'] = (df_gain['sum'] / df_gain['count']) / (result['tg'].sum() / len(result))
+    df_gain['base'] = 1
+
+    sns.set(style="whitegrid")
+    plt.figure(figsize=(10, 5))
+    sns.lineplot(data=df_gain['Lift'], marker="o", color="skyblue", label="Lift")
+    plt.plot(df_gain['base'], 'r--', label="Base")
+
+    plt.title('Lift Curve')
+    plt.xlabel('Decile')
+    plt.ylabel('Lift Value')
+    plt.xticks(list(range(1, 11, 1)))
+    plt.legend()
+    plt.show()
+
+# Lift图
+def lift_cure1(y_val, probs):
     result = pd.DataFrame({'tg': y_val, 'proba': probs})
     proba_copy = result.proba.copy()
     for i in range(10):
@@ -793,7 +826,7 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
         feature_imp_plt = feature_imp[['feature_importance', left_on_name]].copy()
         var_zh_name = left_on_name
 
-    feature_imp_plt.sort_values(by='feature_importance', ascending=True, inplace=True)
+    feature_imp_plt.sort_values(by='feature_importance', ascending=False, inplace=True)
     feature_imp_plt.dropna(axis=0, inplace=True)
     feature_imp_plt_top20 = feature_imp_plt.head(20)
 
@@ -808,8 +841,8 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
     # plt.show()
 
     plt.figure(figsize=(16, 16))
-    sns.barplot(data=feature_imp_plt_top20, x='feature_importance', y=var_zh_name)
-    plt.title('20 TOP feature importance')
+    sns.barplot(data=feature_imp_plt_sort, x='feature_importance', y=var_zh_name)
+    plt.title('feature importance')
     plt.show()
 
 
@@ -1007,6 +1040,26 @@ def prob_plot(score, prob):
     '''
     概率评分卡映射
     '''
+    plt.figure(figsize=(15, 8))
+    # 绘制散点图
+    sns.scatterplot(x=prob, y=score, color='skyblue', s=100, label='prob_to_score', marker='o')
+    # 绘制参考线
+    plt.axvline(x=0.5, color='red', linestyle='--', label='Threshold = 0.5')
+    # 设置刻度
+    plt.xticks(np.arange(0.00, 1.01, 0.10))
+    plt.yticks(np.arange(0, 1001, 100))
+    # 添加标签
+    plt.xlabel('Probability', fontsize=14)
+    plt.ylabel("Score", fontsize=14)
+    plt.legend(loc='best', fontsize=12)
+    # 显示图像
+    plt.show()
+
+
+def prob_plot1(score, prob):
+    '''
+    概率评分卡映射
+    '''
 
     plt.subplots(figsize=(15, 8))
     plt.scatter(prob, score, marker='o', label='prob_to_score')
@@ -1166,7 +1219,6 @@ def onehot_encode(df, save_path, flag='train', prefix='n_'):
             encoded_columns = list(encoded_columns)
 
         new_columns = list(set([col.split('_')[0] for col in encoded_columns]))
-        print(new_columns)
         num_cols = [col for col in df.columns if col not in encoded_columns]
 
         # 确保DataFrame中存在这些列
@@ -1207,7 +1259,6 @@ def onehot_encode1(df, save_path, flag='train',prefix='n_'):
         enc = pickle.load(read_model)
         read_model.close()
 
-        print(df.columns)
         encoded_columns = enc.get_feature_names(df.columns)
 
         # 确保 DataFrame 中存在这些列
@@ -1247,7 +1298,31 @@ def model_predict(model_fit, X):
     return y_score, y_pred, df
 
 
-def plot_pr(recall,precision):
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def plot_pr(recall, precision):
+    # 设置Seaborn风格
+    sns.set(style="whitegrid")
+
+    # 创建图形并优化配色
+    plt.figure(figsize=(8, 6))
+    sns.lineplot(x=recall, y=precision, marker='o', color='skyblue', linewidth=2.5)
+
+    # 添加标题和标签
+    plt.title('Precision-Recall Curve', fontsize=16)
+    plt.xlabel('Recall', fontsize=14)
+    plt.ylabel('Precision', fontsize=14)
+
+    # 设置坐标轴刻度字体大小
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    # 显示图形
+    plt.show()
+
+def plot_pr1(recall,precision):
     # 绘制 PR 曲线
     plt.figure(figsize=(8, 6))
     plt.plot(recall, precision, marker='.')
@@ -1365,7 +1440,7 @@ def prob_distplot(df,var_name='y_prob',bins=10):
     mpl.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
     plt.style.use('ggplot')
     plt.subplots(figsize=(15, 6))
-    sns.distplot(df[var_name], bins=bins)
+    sns.distplot(df[var_name], bins=bins, color='skyblue')
     plt.show()
 
 
@@ -1700,10 +1775,10 @@ def cst_stat_plot(df, dt_name, title='每日点击次数趋势图', ylabel='点�
     """
     df[dt_name] = pd.to_datetime(df[dt_name])
     if stats_field is None:
-        print('total PV:',len(df))
+        logger.debug('total PV:{}'.format(len(df)))
         pv_clicks_per_day = df.groupby(dt_name).size()
     else:
-        print('total PV:', df[stats_field].sum())
+        logger.debug('total PV:{}'.format(df[stats_field].sum()))
         pv_clicks_per_day = df.groupby(dt_name)[stats_field].agg(['sum'])
 
     logger.debug(pv_clicks_per_day.head())
@@ -1712,10 +1787,10 @@ def cst_stat_plot(df, dt_name, title='每日点击次数趋势图', ylabel='点�
                ylabel=ylabel)
 
     if cst_field is None:
-        print('total UV:',len(df))
+        logger.debug('total UV:'.format(len(df)))
         uv_clicks_per_day = df.groupby(dt_name).nunique()
     else:
-        print('total UV', df[cst_field].nunique())
+        logger.debug('total UV'.format(df[cst_field].nunique()))
         uv_clicks_per_day = df.groupby(dt_name)[cst_field].nunique()
 
     logger.debug(uv_clicks_per_day.head(20))
@@ -1724,7 +1799,72 @@ def cst_stat_plot(df, dt_name, title='每日点击次数趋势图', ylabel='点�
                ylabel=ylabel)
 
 
-def plot_histogram(df,col, col_name, label_bad='响应样本',
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+import seaborn as sns
+
+
+def plot_histogram(df, col, col_name, label_bad='响应样本',
+                   label_good='未响应样本', label='响应率%',
+                   rotation=45):
+    """
+    绘制双轴直方图和响应率曲线
+    """
+    x_list = df[df.variable == col]['bin']  # X轴
+    y_value = df[df.variable == col]['count']  # Y1轴数值
+    y11_value = df[df.variable == col]['good']  # Y1轴数值
+    y12_value = df[df.variable == col]['bad']  # Y1轴数值
+
+    y1 = y_value.max() * (1 + 0.30)  # Y1轴取值上限
+    y2_value = df[df.variable == col]['badprob']  # Y2轴数值
+    y2 = y2_value.max() * (1 + 0.20)  # Y2轴取值上限
+    iv = df[df.variable == col]['total_iv'].values[0].round(3)
+
+    def to_percent(temp, position):
+        return '%2.1f' % (100 * temp) + "%"
+
+    plt.figure(figsize=(12, 8), constrained_layout=True)
+    sns.set(style="whitegrid")
+    plt.gca().yaxis.set_major_formatter(FuncFormatter(to_percent))  # 设置纵轴百分比
+    ax = plt.subplot(111, facecolor='lightgrey')
+    plt.ylim(0, y1)
+
+    # 柱状图并列排布
+    x = np.arange(len(x_list))
+    rects1 = ax.bar(x - 0.1, y11_value, alpha=0.8, width=0.3, color='skyblue', label=label_good)
+    rects2 = ax.bar(x + 0.1, y12_value, alpha=0.8, width=0.3, color='steelblue', label=label_bad)
+
+    # 添加柱状图的数值标注
+    for rect in rects1 + rects2:
+        height = rect.get_height()
+        ax.annotate(f'{int(height)}',
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha='center', va='bottom', fontsize=10)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_list, rotation=rotation, fontsize=12)
+    ax.legend(loc='upper left', fontsize=12)
+
+    # 第二个Y轴
+    ax2 = ax.twinx()
+    plt.ylim(0, y2)
+    ax2.plot(x_list, y2_value, color='darkblue', marker='o', linestyle='-', linewidth=2, label=label)
+
+    for x, y in zip(x_list, y2_value):
+        ax2.text(x, y, f'{y * 100:.2f}%', ha='center', va='bottom', fontsize=10, color='darkblue')
+
+    ax2.legend(loc='upper right', fontsize=12)
+    ax2.set_title(f'{col_name}: IV = {iv}', fontsize=16)
+    ax2.set_ylabel('响应率 %', fontsize=12)
+    plt.show()
+
+
+
+def plot_histogram1(df,col, col_name, label_bad='响应样本',
                    label_good='未响应样本', label='响应率%',
                    rotation=45):
     """
@@ -1813,7 +1953,7 @@ def output_list_by_model(path, min_lift=4):
     report_df = pd.read_csv(path, encoding='utf-8')
     report_df.columns = ['变量', '分箱', '总样本', '响应样本', '未响应样本', '响应率','累计样本率','累计响应率','IV', 'KS', 'LIFT']
     logger.info('模型报告：')
-    print(report_df.head(20))
+    logger.debug(report_df.head(20))
 
     report_df['分箱'] = report_df['分箱'].apply(lambda x: float(x.split(',')[0][1:]))
     max_ks_index = report_df['KS'].sort_values(ascending=False).index[0]
@@ -1863,7 +2003,7 @@ def gmm_train(model_dir, X, gmm_need_retrain=True,model_size=7):
                 best_k=n
                 best_inx = cnt
             cnt += 1
-        print('最小的BIC为{}，最好的K为：{}'.format(min_bic,best_k))
+        logger.debug('最小的BIC为{}，最好的K为：{}'.format(min_bic,best_k))
         with open(gmms_model_list_path,'wb') as savefile:
             pickle.dump(models ,savefile ,0)
 
@@ -1952,6 +2092,30 @@ def plot_distribuion(df,y_target='target',plot_type='all'):
     else:
         sns.distplot(df[cat_features+num_features])
 
+
+
+def tgi_wordcloud_en(feature_tgi_df):
+    # 设置字体为默认英文字体
+    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rcParams['axes.unicode_minus'] = False
+
+    # 将DataFrame转换为字典
+    data = feature_tgi_df['TGI'].to_dict()
+    cleaned_freq_dict = {k: (0 if np.isnan(v) else v) for k, v in data.items()}
+
+    # 使用英文字体生成词云
+    wordcloud = WordCloud(width=800, height=400, background_color='white')
+
+    # 生成词云
+    wordcloud.generate_from_frequencies(cleaned_freq_dict)
+
+    # 显示词云图
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')  # 关闭坐标轴
+
+    # 显示图像
+    plt.show()
 
 def tgi_wordcloud(feature_tgi_df):
     # 设置中文显示

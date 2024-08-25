@@ -79,18 +79,18 @@ print(f"过采样比例: {r_over}, 欠采样比例: {r_under}")
 需要计算适合的过采样和欠采样比例，以便直接传递给现有的函数来执行混合采样。这两个函数 `oversample_dataframe` 和 `under_sample` 中的 `desired_ratio` 参数应该分别表示在过采样或欠采样后少数类样本相对于多数类样本的比例。
 
 ### 目标
-1. 通过 **过采样** 增加少数类样本，达到一个指定的比例 \( r_{\text{over}} \)。
-2. 通过 **欠采样** 减少多数类样本，达到一个指定的比例 \( r_{\text{under}} \)。
+1. 通过 **过采样** 增加少数类样本，达到一个指定的比例 $ r_{\text{over}} $。
+2. 通过 **欠采样** 减少多数类样本，达到一个指定的比例 $ r_{\text{under}} $。
 
-最终要实现的是指定的目标比例 \( r_{\text{target}} \)：
+最终要实现的是指定的目标比例 $ r_{\text{target}} $：
 
-\[
+$$
 \frac{n_{\text{pos}} \times r_{\text{over}}}{n_{\text{neg}} \times r_{\text{under}}} = r_{\text{target}}
-\]
+$$
 
 ### 计算思路
-1. 先确定一个欠采样比例 \( r_{\text{under}} \)。
-2. 根据这个比例和目标比例 \( r_{\text{target}} \)，计算过采样比例 \( r_{\text{over}} \)。
+1. 先确定一个欠采样比例 $ r_{\text{under}} $。
+2. 根据这个比例和目标比例 $ r_{\text{target}} $，计算过采样比例 $ r_{\text{over}} $。
 
 ### 代码实现
 

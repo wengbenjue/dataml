@@ -353,11 +353,14 @@ def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',und
        """
     # 获取少数类和多数类样本数量
     n_pos = sum(df[y_target] == 1)
+    print('pos:',n_pos)
     n_neg = sum(df[y_target] == 0)
+    print('n_neg:', n_neg)
 
     # 计算过采样和欠采样的比例
-    r_under, r_over = calculate_sampling_ratios(n_pos, n_neg, desired_ratio,r_under=under_desired_ratio)
-
+    # r_under, r_over = calculate_sampling_ratios(n_pos, n_neg, desired_ratio,r_under=under_desired_ratio)
+    r_under = under_desired_ratio
+    r_over = desired_ratio
     # 进行欠采样
     df_under = under_sample(df, y_target=y_target, desired_ratio=r_under)
 
