@@ -130,9 +130,9 @@ def feature_classify(df, target='target'):
     df[category_features] = df[category_features].astype('str')
     cat_list = cd_df_list + category_features
     num_list = numerical_features
-    logger.info('剩余分类型变量个数：%d' % len(cat_list))
-    logger.info('剩余连续型变量个数：%d' % len(num_list))
-    logger.info('剩余变量总数：%d' % len(cat_list + num_list))
+    logger.debug('剩余分类型变量个数：%d' % len(cat_list))
+    logger.debug('剩余连续型变量个数：%d' % len(num_list))
+    logger.debug('剩余变量总数：%d' % len(cat_list + num_list))
     return ind_df_list, cd_df_list, num_df_list, cat_list, num_list
 
 
@@ -1193,7 +1193,7 @@ import os
 from sklearn.preprocessing import OneHotEncoder
 
 
-def onehot_encode(df, save_path, flag='train', prefix='n_'):
+def onehot_encode(df, save_path, flag='train', prefix='n_',inverse_cat_features=None):
     df_return = pd.DataFrame()
     if flag == 'train':
         # 训练模式下进行OneHot编码并保存编码器
@@ -1218,8 +1218,13 @@ def onehot_encode(df, save_path, flag='train', prefix='n_'):
             encoded_columns = pickle.load(feature_file)
             encoded_columns = list(encoded_columns)
 
-        new_columns = list(set([col.split('_')[0] for col in encoded_columns]))
+        new_columns = []
+        if inverse_cat_features is not None:
+            new_columns = inverse_cat_features
+        else:
+            new_columns = list(set([col.split('_')[0] for col in encoded_columns]))
         num_cols = [col for col in df.columns if col not in encoded_columns]
+
 
         # 确保DataFrame中存在这些列
         if all(col in df.columns for col in encoded_columns):

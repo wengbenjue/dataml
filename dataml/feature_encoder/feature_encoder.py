@@ -12,7 +12,7 @@ class FeatureEncoder:
         self.model_dir = model_dir
         logger.info(self.name)
 
-    def encode(self, X, flag='train', prefix='all_train') -> DataFrame:
+    def encode(self, X, flag='train', prefix='all_train',inverse_cat_features=None) -> DataFrame:
         pass
 
     def persist(self,X,y,target='target',model_type='train'):
@@ -31,9 +31,11 @@ class OnehotEncoder(FeatureEncoder):
         self.y_target = y_target
         # super.__init__(name=name)
 
-    def encode(self, X, flag='train', prefix='all_train_') -> DataFrame:
-        _, _, _, cat_features, num_features = feature_classify(X, target=self.y_target)
-        X[cat_features] = X[cat_features].astype(str)
+    def encode(self, X, flag='train', prefix='all_train_',inverse_cat_features=None) -> DataFrame:
+        cat_features, num_features = [],[]
+        if flag != 'inverse_transform':
+            _, _, _, cat_features, num_features = feature_classify(X, target=self.y_target)
+            X[cat_features] = X[cat_features].astype(str)
         # one-hot encoding for train
         cat_onehot_df = None
         if flag == 'train':
@@ -44,7 +46,7 @@ class OnehotEncoder(FeatureEncoder):
         elif flag == 'inverse_transform':
             cate_onehot_df = onehot_encode(X,
                                            self.model_dir,
-                                           flag='inverse_transform', prefix=prefix)
+                                           flag='inverse_transform', prefix=prefix,inverse_cat_features=inverse_cat_features)
             X = cate_onehot_df
         else:
             # one-hot encoding for test
@@ -52,7 +54,7 @@ class OnehotEncoder(FeatureEncoder):
                                            self.model_dir,
                                            flag='test', prefix=prefix)
             X = pd.concat([cate_onehot_df, X[num_features]], axis=1)
-        logger.info(cate_onehot_df.shape)
+        logger.debug(cate_onehot_df.shape)
 
         return X
 
@@ -65,7 +67,7 @@ class WoeEncoder(FeatureEncoder):
         self.binpath = binpath
         # super.__init__(name=name)
 
-    def encode(self, X, flag='train', prefix='all_train') -> DataFrame:
+    def encode(self, X, flag='train', prefix='all_train',inverse_cat_features=None) -> DataFrame:
         #load bins for woe
         bins = None
         if self.binpath is None:

@@ -201,7 +201,7 @@ def oversample_dataframe(df, y_target, positive_class_ratio,data_dir):
     # 将过采样后的数据重新组装成DataFrame
     df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
 
-    df_onehot_inverse = onehot_encoder.encode(X=df_resampled, flag='inverse_transform', prefix='oversample_')
+    df_onehot_inverse = onehot_encoder.encode(X=df_resampled, flag='inverse_transform', prefix='oversample_',inverse_cat_features=cat_features)
     df_onehot_inverse[y_target] = y_resampled
     df_onehot_inverse.replace([np.inf, -np.inf], np.nan, inplace=True)
     # 使用列的平均值替换 NaN 值
