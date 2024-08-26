@@ -1,0 +1,22 @@
+setuptools
+wheel
+scikit_learn==0.24.2
+matplotlib==3.3.4
+seaborn==0.11.2
+tqdm==4.64.1
+scorecardpy==0.1.9.2
+numpy==1.19.5
+numba==0.56.4
+pandas == 1.1.5
+lightgbm==2.3.1
+xgboost==0.81
+statsmodels==0.13.2
+shap==0.41.0
+xlrd==2.0.0
+sqlparse==0.4.3
+SQLAlchemy==1.4.51
+psycopg2-binary==2.8.6
+colorama==0.4.5
+bayesian-optimization==1.4.1
+imbalanced-learn==0.8.0
+wordcloud==1.9.3

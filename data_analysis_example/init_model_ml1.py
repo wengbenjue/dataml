@@ -1,6 +1,7 @@
 from dataml.ml_model import MLModel
 from dataml.model.lightgbm_model import LightGBMModel
 from dataml.model.logistic_regression_model import LogisticRegressionModel
+from dataml.model.decision_tree_model import DecisionTreeModel
 from dataml.feature_explain import ShapFeatureExplain
 import os
 
@@ -28,11 +29,6 @@ from dataml.feature_process import (
     CatClusterValueFeatureProcess,
     ImbalanceProcess
 
-)
-
-from dataml.feature_encoder import (
-OnehotEncoder,
-WoeEncoder
 )
 
 
@@ -98,7 +94,7 @@ v_threshold = 0.01 #方差剔除阈值
 min_value_count = 50 #类别变量最低要求频数
 
 
-#IV
+#IV & 分箱设置
 bin_method = 'chimerge' #分箱方法，tree | chimerge 决策树或卡方分箱
 # min_iv_limit=0.02
 min_iv_limit=0.000
@@ -107,6 +103,13 @@ max_iv_limit=0.9
 # max_iv_limit=1000
 
 max_num_bin = 5 #最大分箱数
+
+#自定义分箱
+# breaks_list = {
+#     'age': [26, 35, 40],
+#     'guarantors': ["none", "co-applicant%,%guarantor"]
+# }
+breaks_list  =None
 
 
 #相关性系数剔除
@@ -151,8 +154,22 @@ lgb_params = {'application': 'binary', 'num_iterations':100, 'learning_rate':0.0
              'subsample_for_bin':200, 'random_state':500, 'colsample_bytree':0.53, 'subsample':0.8, 'min_split_gain':5, 'min_child_weight':0.01,
              'min_child_samples':313, 'reg_alpha': 1, 'reg_lambda':2, 'sumsample':0.88, 'scale_pos_weight':1.0}
 
-
-
+decistion_tree_params ={
+            'max_depth':3,
+            'criterion':'gini', #entropy  gini
+            'splitter':'best',
+            'min_samples_split': 2,
+            'min_samples_leaf': 1,
+            'max_features': None,
+            'random_state': None,
+            'max_leaf_nodes': None,
+            'class_weight': None,
+            'ccp_alpha': 0.0,
+            'min_impurity_decrease':0.0,
+            'min_impurity_split':None,
+            'min_weight_fraction_leaf':0.0
+            }
+class_names=['0_negative','1_positive'] #分类标签
 
 #评分卡参数
 Basepoints=600 #评分卡基础分
@@ -222,6 +239,7 @@ csi_feature_process = [
 
 shapFeatureExplain = ShapFeatureExplain()
 lgb_explain_models = [shapFeatureExplain]
+decisition_tree_explain_models = [shapFeatureExplain]
 lr_explain_models = [shapFeatureExplain]
 
 # feature_encoder =  WoeEncoder(model_dir=model_dir) if use_woe else OnehotEncoder(model_dir=model_dir,y_target=y_target)
@@ -245,7 +263,9 @@ mlModel=MLModel(
     ,models=[LogisticRegressionModel(explain_models=lr_explain_models, class_weight=class_weight,
                                     class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,
                                      model_dir=model_dir,params_optimize=params_optimize,params=lr_params)
-            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize,params=lgb_params)]
+            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize,params=lgb_params)
+            ,DecisionTreeModel(explain_models=decisition_tree_explain_models,params_optimize=params_optimize,params=decistion_tree_params,class_names=class_names)
+             ]
     ,uni_feature_process = uni_feature_process
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process

@@ -214,7 +214,10 @@ class IVFeatureProcess (DoubleFeatureProcess):
     def __init__(self,name = 'IV值剔除',bin_method='tree',
                  min_iv_limit=.02,max_iv_limit=.5,
                  max_num_bin = 5,
-                 model_dir=None,y_target='label',target_positive='bad|1'):
+                 model_dir=None,
+                 y_target='label',
+                 target_positive='bad|1',
+                 breaks_list=None):
         self.name = name
         self.bin_method = bin_method
         self.min_iv_limit = min_iv_limit
@@ -223,10 +226,11 @@ class IVFeatureProcess (DoubleFeatureProcess):
         self.max_num_bin = max_num_bin
         self.y_target=y_target
         self.target_positive=target_positive
+        self.breaks_list = breaks_list
 
     def process(self, df, df1=None, df2=None, mode='train'):
         bins = sc.woebin(df, y=self.y_target, x=None
-                         , breaks_list=None
+                         , breaks_list=self.breaks_list
                          , special_values=None
                          , min_perc_fine_bin=0.02  # 初始细分箱，每个箱子等等比例分：0.02>>>>>50箱
                          , min_perc_coarse_bin=0.05  # 最终粗分箱中，每个箱的最小样本占比

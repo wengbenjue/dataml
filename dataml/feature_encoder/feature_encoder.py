@@ -12,7 +12,7 @@ class FeatureEncoder:
         self.model_dir = model_dir
         logger.info(self.name)
 
-    def encode(self, X, flag='train', prefix='all_train',inverse_cat_features=None) -> DataFrame:
+    def encode(self, X, flag='train', prefix='all_train_',inverse_cat_features=None) -> DataFrame:
         pass
 
     def persist(self,X,y,target='target',model_type='train'):
@@ -29,7 +29,7 @@ class OnehotEncoder(FeatureEncoder):
         self.name = name
         self.model_dir = model_dir
         self.y_target = y_target
-        # super.__init__(name=name)
+        super.__init__(name=name)
 
     def encode(self, X, flag='train', prefix='all_train_',inverse_cat_features=None) -> DataFrame:
         cat_features, num_features = [],[]
@@ -61,13 +61,14 @@ class OnehotEncoder(FeatureEncoder):
 
 
 class WoeEncoder(FeatureEncoder):
-    def __init__(self, model_dir,name='woe feature encoder',binpath=None):
+    def __init__(self, model_dir,name='woe feature encoder',binpath=None,breaks_list=None):
         self.name = name
         self.model_dir = model_dir
         self.binpath = binpath
-        # super.__init__(name=name)
+        self.breaks_list = breaks_list
+        super.__init__(name=name)
 
-    def encode(self, X, flag='train', prefix='all_train',inverse_cat_features=None) -> DataFrame:
+    def encode(self, X, flag='train', prefix='all_train_', inverse_cat_features=None) -> DataFrame:
         #load bins for woe
         bins = None
         if self.binpath is None:
@@ -76,6 +77,8 @@ class WoeEncoder(FeatureEncoder):
             with open(self.binpath, 'rb') as readfile:
                 bins = pickle.load(readfile)
 
+        if self.breaks_list is not None:
+            bins.update(self.breaks_list)
         data_woe_df = sc.woebin_ply(X, bins)
         logger.info(data_woe_df.shape)
         logger.debug(data_woe_df.head(3))
