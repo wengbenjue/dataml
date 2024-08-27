@@ -350,7 +350,7 @@ class ForestFeatureProcess (DoubleFeatureProcess):
          return df,None
 
 
-class ImbalanceProcess(DoubleFeatureProcess):
+class ImbalanceProcessPre(DoubleFeatureProcess):
     '''
     数据不均衡处理
     '''

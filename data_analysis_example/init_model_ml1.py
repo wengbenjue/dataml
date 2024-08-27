@@ -28,8 +28,8 @@ from dataml.feature_process import (
     VarDropFeatureProcess,
     CatClusterValueFeatureProcess,
     ImbalanceProcess
-
 )
+
 
 
 from .feature_process.var_derivatice_feature_process import ScoreCardDerivationFeatureProcess
@@ -218,8 +218,12 @@ double_feature_process = [
                      model_dir=model_dir, y_target=y_target),
     CorrFeatureProcess(corr_threshold=corr_threshold, y_target=y_target),
     CSIFeatureProcess(csi_threshold=csi_threshold, model_dir=model_dir, y_target=y_target),
-    rorestFeatureProcess,
-    imbalance_process
+    rorestFeatureProcess
+]
+
+#后处理，如：欠采样、过采样、特征选择等
+post_process = [
+imbalance_process
 ]
 
 oot_feature_process = [
@@ -270,6 +274,7 @@ mlModel=MLModel(
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process
     ,csi_feature_process=csi_feature_process
+    ,post_process=post_process
 #     ,feature_encoder = feature_encoder
     ,sheet_name=sheet_name
     ,var_zh_name=var_zh_name

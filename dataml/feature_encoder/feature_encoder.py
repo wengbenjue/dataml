@@ -29,7 +29,7 @@ class OnehotEncoder(FeatureEncoder):
         self.name = name
         self.model_dir = model_dir
         self.y_target = y_target
-        super.__init__(name=name)
+        super().__init__(model_dir=self.model_dir,name=self.name)
 
     def encode(self, X, flag='train', prefix='all_train_',inverse_cat_features=None) -> DataFrame:
         cat_features, num_features = [],[]
@@ -66,7 +66,7 @@ class WoeEncoder(FeatureEncoder):
         self.model_dir = model_dir
         self.binpath = binpath
         self.breaks_list = breaks_list
-        super.__init__(name=name)
+        super().__init__(model_dir=self.model_dir, name=self.name)
 
     def encode(self, X, flag='train', prefix='all_train_', inverse_cat_features=None) -> DataFrame:
         #load bins for woe

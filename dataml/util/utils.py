@@ -76,7 +76,32 @@ from .feature_selector import FeatureSelector
 plt.rcParams['axes.unicode_minus'] = False
 # plt.rcParams['font.family'] = 'Source Han Sans CN'
 
+
 class CustomScaler:
+    def __init__(self, file_name='scaler.pkl'):
+        self.scaler = MinMaxScaler()
+        self.file_name = file_name
+
+    def fit_transform(self, X_train):
+        self.scaler.fit(X_train)
+        with open(self.file_name, 'wb') as file:
+            pickle.dump(self.scaler, file)
+        X_train_scaled = self.scaler.transform(X_train)
+        return pd.DataFrame(X_train_scaled, columns=X_train.columns, index=X_train.index)
+
+    def load_and_transform(self, X_test):
+        with open(self.file_name, 'rb') as file:
+            loaded_scaler = pickle.load(file)
+        X_test_scaled = loaded_scaler.transform(X_test)
+        return pd.DataFrame(X_test_scaled, columns=X_test.columns, index=X_test.index)
+
+    def inverse_transform(self, X_scaled):
+        with open(self.file_name, 'rb') as file:
+            loaded_scaler = pickle.load(file)
+        X_inversed = loaded_scaler.inverse_transform(X_scaled)
+        return pd.DataFrame(X_inversed, columns=X_scaled.columns, index=X_scaled.index)
+
+class CustomScaler1:
     def __init__(self, file_name='scaler.pkl'):
         self.scaler = MinMaxScaler()
         self.file_name = file_name

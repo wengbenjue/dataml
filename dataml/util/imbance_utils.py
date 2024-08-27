@@ -12,6 +12,49 @@ from .my_logging import logger
 from .utils import feature_classify
 
 
+
+def under_sample_en(X, y, y_target, desired_ratio):
+    '''
+    根据设定的正负样本比例对DataFrame进行降采样。
+
+    :param X: 特征数据集的DataFrame
+    :param y: 目标变量的Series
+    :param y_target: 目标变量的列名
+    :param desired_ratio: 设定的正负样本比例 (正样本 / 负样本)
+    :return: 降采样后的X和y
+    '''
+
+    # 合并 X 和 y 为一个 DataFrame 以便操作
+    df = pd.concat([X, y], axis=1)
+
+    # 计算正负样本的数量
+    n_class_0 = df[df[y_target] == 0].shape[0]  # 多数类样本
+    n_class_1 = df[df[y_target] == 1].shape[0]  # 少数类样本
+
+    # 计算当前样本比例
+    actual_ratio = n_class_1 / n_class_0
+
+    # 检测是否需要降采样
+    if actual_ratio < desired_ratio:
+        # 负样本是多数类，需要降采样
+        n_class_0_new = int(n_class_1 / desired_ratio)
+        df_majority_downsampled = df[df[y_target] == 0].sample(n_class_0_new, random_state=42)
+        df_minority = df[df[y_target] == 1]
+
+        # 合并回一个新的平衡DataFrame
+        df_balanced = pd.concat([df_minority, df_majority_downsampled])
+
+        # 洗牌DataFrame
+        df_balanced = df_balanced.sample(frac=1, random_state=42)
+    else:
+        # 当前比例已经满足或低于设定的比例，不需要降采样
+        df_balanced = df
+
+    # 分离 X 和 y
+    X_balanced = df_balanced.drop(columns=[y_target])
+    y_balanced = df_balanced[y_target]
+
+    return X_balanced, y_balanced
 def under_sample(df, y_target, desired_ratio):
     '''
     根据设定的正负样本比例对DataFrame进行降采样。
@@ -208,73 +251,38 @@ def oversample_dataframe(df, y_target, positive_class_ratio,data_dir):
     df_onehot_inverse.fillna(df_onehot_inverse.mean(), inplace=True)
     return df_onehot_inverse
 
-def oversample_dataframe1(df, y_target, positive_class_ratio):
+def oversample_encoded(X, y, positive_class_ratio):
     """
-        根据指定的正样本比例对DataFrame进行过采样，并处理类别特征。
+    根据指定的正样本比例对DataFrame进行过采样，并处理类别特征。
 
-        :param df: 原始数据集的DataFrame
-        :param target_column: 目标变量的列名
-        :param categorical_columns: 类别特征的列名列表
-        :param positive_class_ratio: 目标正样本比例
-        :return: 过采样后的DataFrame
-        """
-    # 对类别特征进行标签编码
-    _, _, _, cat_features, num_features = feature_classify(df, target=y_target)
-    df_encoded = df.copy()
-    encoders = {}
-    for col in cat_features:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df[col])
-        encoders[col] = encoder
-
-    # 分割特征和目标变量
-    X = df_encoded.drop(y_target, axis=1)
-    y = df_encoded[y_target]
-
+    :param df: 原始数据集的DataFrame
+    :param y_target: 目标变量的列名
+    :param positive_class_ratio: 目标正样本比例(少数类样本 / 多数类样本的比例)
+    :return: 过采样后的DataFrame
+    """
     # 计算类别的数量
     n_pos = sum(y == 1)
     n_neg = sum(y == 0)
 
-    # 计算并检查过采样的目标数量
-    target_pos = int(n_neg * positive_class_ratio / (1 - positive_class_ratio))
+    # 计算实际正样本比例
+    actual_positive_ratio = n_pos / n_neg
+    logger.debug('actual positive(1) ratio:{}'.format(round(actual_positive_ratio,2)))
+    logger.debug('expect positive(1) ratio:{}'.format(round(positive_class_ratio,2)))
 
-    if target_pos > n_pos:
-        # 使用SMOTE进行过采样
-        smote = SMOTE(sampling_strategy=positive_class_ratio)
-        X_resampled, y_resampled = smote.fit_resample(X, y)
-    else:
-        # 如果过采样比例不合理，使用原始数据
-        logger.info('reset the sample ratio please....')
-        X_resampled, y_resampled = X, y
+    # 检查设定的正样本比例是否合理
+    if positive_class_ratio <= actual_positive_ratio:
+        logger.warning(
+            'The desired positive class ratio is less than or equal to the actual ratio. No oversampling needed.')
+        return X,y
 
-    # 将过采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
+    # 计算过采样的目标数量
+    target_pos = int(n_neg * positive_class_ratio)
 
-    # 反向转换类别特征
-    for col, encoder in encoders.items():
-        df_resampled[col] = encoder.inverse_transform(df_resampled[col].astype(int))
+    # 使用SMOTE进行过采样
+    smote = SMOTE(sampling_strategy=positive_class_ratio)
+    X_resampled, y_resampled = smote.fit_resample(X, y)
 
-    return df_resampled
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# categorical_columns = ['cat_col1', 'cat_col2']  # 字符型类别特征的列名列表
-# df_resampled = oversample_dataframe(df, 'y_target', categorical_columns, positive_class_ratio=0.5)
-
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# df_resampled = oversample_dataframe(df, 'y_target', positive_class_ratio=0.5)
-
-
-# 创建一个不平衡的数据集作为示例
-# X, y = make_classification(n_classes=2, class_sep=2, weights=[0.1, 0.9],
-#                            n_informative=3, n_redundant=0, flip_y=0,
-#                            n_features=20, n_clusters_per_class=1,
-#                            n_samples=1000, random_state=10)
-
-
+    return  X_resampled, y_resampled
 
 
 
@@ -369,59 +377,29 @@ def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',und
 
     return df_mixed
 
-def mixed_sampling_with_categorical1(df,oversample_strategy=0.2, undersample_strategy=0.5,y_target='target'):
-    # 对类别特征进行标签编码
-    _, _, _, cat_features, num_features = feature_classify(df, target=y_target)
-    # 对类别特征进行标签编码
-    df_encoded = df.copy()
-    encoders = {}
-    for col in cat_features:
-        encoder = LabelEncoder()
-        df_encoded[col] = encoder.fit_transform(df[col])
-        encoders[col] = encoder
+def mixed_sampling_with_categorical_encoded(X,y, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5,data_dir=None):
+    """
+       混合采样，按指定目标比例进行过采样和欠采样。
 
-    # 分割特征和目标变量
-    X = df_encoded.drop(y_target, axis=1)
-    y = df_encoded[y_target]
-
-    # 计算类别的数量
+       :param X,y: 数据集
+       :param desired_ratio: 希望达到的少数类/多数类目标比例
+       :param y_target: 目标变量列名
+       :param under_desired_ratio: 1.先指定一个欠采样比例(少数类(1)/多数类目标比例(0),可以调整这个值，决定欠采样的强度
+       :return: 经过混合采样后的DataFrame
+       """
+    # 获取少数类和多数类样本数量
     n_pos = sum(y == 1)
     n_neg = sum(y == 0)
 
-    # 计算并检查过采样和欠采样的目标数量
-    target_pos_oversample = int(n_neg * oversample_strategy)
-    target_neg_undersample = int(target_pos_oversample * (1 / undersample_strategy))
+    # 计算过采样和欠采样的比例
+    # r_under, r_over = calculate_sampling_ratios(n_pos, n_neg, desired_ratio,r_under=under_desired_ratio)
+    r_under = under_desired_ratio
+    r_over = desired_ratio
+    # 进行欠采样
+    X,y = under_sample_en(X,y, y_target=y_target, desired_ratio=r_under)
 
-    if target_pos_oversample > n_pos and target_neg_undersample < n_neg:
-        # 使用SMOTE过采样和RandomUnderSampler欠采样
-        over = SMOTE(sampling_strategy=oversample_strategy)
-        under = RandomUnderSampler(sampling_strategy=undersample_strategy)
+    # 进行过采样
+    X_sampled, y_sampled = oversample_encoded(X, y, positive_class_ratio=r_over)
 
-        # 创建采样管道
-        pipeline = Pipeline(steps=[('o', over), ('u', under)])
-
-        # 应用管道进行采样
-        X_resampled, y_resampled = pipeline.fit_resample(X, y)
-    else:
-        # 如果采样比例不合理，使用原始数据
-        logger.info('reset the sample ratio please....')
-        X_resampled, y_resampled = X, y
-
-    # 将采样后的数据重新组装成DataFrame
-    df_resampled = pd.DataFrame(X_resampled, columns=X.columns)
-    df_resampled[y_target] = y_resampled
-
-    # 反向转换类别特征
-    for col, encoder in encoders.items():
-        df_resampled[col] = encoder.inverse_transform(df_resampled[col].astype(int))
-
-    return df_resampled
-
-# 示例使用:
-# 假设 df 是原始数据集的 DataFrame，'y_target' 是目标变量的列名
-# categorical_columns = ['cat_col1', 'cat_col2']  # 字符型类别特征的列名列表
-# df_resampled = mixed_sampling_with_categorical(df, 'y_target', categorical_columns, oversample_strategy=0.1, undersample_strategy=0.5)
-
-#plot
-
+    return X_sampled, y_sampled
 

@@ -93,6 +93,7 @@ class MLModel:
                  csi_feature_process: List[FeatureProcess] = None,
                  oot_feature_process: List[FeatureProcess] = None,
                  feature_encoder: FeatureEncoder=None,
+                 post_process=None,
                  min_lift = 1.5,
                  sheet_name = 'Sheet1',
                  var_en_name = '',
@@ -122,6 +123,7 @@ class MLModel:
         self.pred_dataset = pred_dataset
         self.out_dataset = out_dataset
         self.feature_encoder = feature_encoder
+        self.post_process =post_process #后处理，比如不均衡处理等
 
         self.cst_base_info_dataset = cst_base_info_dataset
         self.uni_feature_process = uni_feature_process
@@ -151,57 +153,64 @@ class MLModel:
             for model in self.models :
                 model.model_dir = self.model_dir
                 model.cache_dir = self.cache_dir
-        if train_dataset is not None:
-            train_dataset.model_dir = self.model_dir
-            train_dataset.cache_dir = self.cache_dir
+        if self.train_dataset is not None:
+            self.train_dataset.model_dir = self.model_dir
+            self.train_dataset.cache_dir = self.cache_dir
 
-        if train_dataset is not None:
-            train_dataset.model_dir = self.model_dir
-            train_dataset.cache_dir = self.cache_dir
+        if self.train_dataset is not None:
+            self.train_dataset.model_dir = self.model_dir
+            self.train_dataset.cache_dir = self.cache_dir
 
-        if oot_dataset is not None:
-            oot_dataset.model_dir = self.model_dir
-            oot_dataset.cache_dir = self.cache_dir
+        if self.oot_dataset is not None:
+            self.oot_dataset.model_dir = self.model_dir
+            self.oot_dataset.cache_dir = self.cache_dir
 
-        if pred_dataset is not None:
-            pred_dataset.model_dir = self.model_dir
-            pred_dataset.cache_dir = self.cache_dir
+        if self.pred_dataset is not None:
+            self.pred_dataset.model_dir = self.model_dir
+            self.pred_dataset.cache_dir = self.cache_dir
 
-        if out_dataset is not None:
-            out_dataset.model_dir = self.model_dir
-            out_dataset.cache_dir = self.cache_dir
+        if self.out_dataset is not None:
+            self.out_dataset.model_dir = self.model_dir
+            self.out_dataset.cache_dir = self.cache_dir
 
-        if cst_base_info_dataset is not None:
-            cst_base_info_dataset.model_dir = self.model_dir
-            cst_base_info_dataset.cache_dir = self.cache_dir
+        if self.cst_base_info_dataset is not None:
+            self.cst_base_info_dataset.model_dir = self.model_dir
+            self.cst_base_info_dataset.cache_dir = self.cache_dir
 
-        if uni_feature_process is not None:
-            for feature_process in uni_feature_process:
+        if self.uni_feature_process is not None:
+            for feature_process in self.uni_feature_process:
                 if feature_process is not None:
                     feature_process.model_dir = self.model_dir
                     feature_process.cache_dir = self.cache_dir
 
-        if double_feature_process is not None:
-            for feature_process in double_feature_process:
+        if self.double_feature_process is not None:
+            for feature_process in self.double_feature_process:
                 if feature_process is not None:
                     feature_process.model_dir = self.model_dir
                     feature_process.cache_dir = self.cache_dir
 
-        if csi_feature_process is not None:
-            for feature_process in csi_feature_process:
+        if self.csi_feature_process is not None:
+            for feature_process in self.csi_feature_process:
                 if feature_process is not None:
                     feature_process.model_dir = self.model_dir
                     feature_process.cache_dir = self.cache_dir
 
-        if oot_feature_process is not None:
-            for feature_process in oot_feature_process:
+        if self.oot_feature_process is not None:
+            for feature_process in self.oot_feature_process:
                 if feature_process is not None:
                     feature_process.model_dir = self.model_dir
                     feature_process.cache_dir = self.cache_dir
 
-        if feature_encoder is not None:
+        if self.feature_encoder is not None:
             feature_encoder.model_dir = self.model_dir
             feature_encoder.cache_dir = self.cache_dir
+
+
+        if self.post_process is not None:
+            for feature_process in self.post_process:
+                if feature_process is not None:
+                    feature_process.model_dir = self.model_dir
+                    feature_process.cache_dir = self.cache_dir
 
         self.onehot_encoder= OnehotEncoder(model_dir=self.model_dir,y_target=self.y_target)
         self.woe_encoder= WoeEncoder(model_dir=self.model_dir)
@@ -348,6 +357,19 @@ class MLModel:
 
         self.feature_encoder.persist(X,y,target=self.y_target,model_type='train')
         self.feature_encoder.persist(X_test, y_test, target=self.y_target, model_type='test')
+
+        logger.info('训练集特征维数：')
+        logger.debug(X.shape)
+        logger.info('测试集特征维数：')
+        logger.debug(X_test.shape)
+
+        #不均衡数据处理
+        if self.post_process is not None:
+            if isinstance(self.post_process,list):
+                for process in self.post_process:
+                    X, y = process(X, y)
+            else:
+                X, y = self.post_process(X, y)
 
         logger.info('训练集特征维数：')
         logger.debug(X.shape)

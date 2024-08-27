@@ -28,8 +28,8 @@ from dataml.feature_process import (
     VarDropFeatureProcess,
     CatClusterValueFeatureProcess,
     ImbalanceProcess
-
 )
+
 
 
 from .feature_process.var_derivatice_feature_process import ScoreCardDerivationFeatureProcess
@@ -46,7 +46,7 @@ train_file_path = os.path.join(cache_dir,'train.csv')
 train_file_path = os.path.join(cache_dir,'train.csv')
 # pred_file_path = os.path.join(cache_dir,'cs-test.csv')
 # pred_file_path = os.path.join(cache_dir,'diabetes.csv')
-pred_file_path = os.path.join(cache_dir,'train.csv')
+pred_file_path = os.path.join(cache_dir,'testA.csv')
 # pred_file_path = os.path.join(cache_dir,'outtime_set.csv')
 # outtime_file_path = os.path.join(cache_dir,'cs-training.csv')
 # outtime_file_path = os.path.join(cache_dir,'training_set.csv')
@@ -56,7 +56,14 @@ outtime_file_path = os.path.join(cache_dir,'train.csv')
 cst_base_info_tablename = ''
 
 dtype={
+    'employmentLength': str,
+    'postCode': str,
+    'employmentTitle': str,
+    'regionCode': str,
+    'purpose': str,
+    'earliesCreditLine': str,
 
+    # 'isDefault': int,
 }
 index_col ='id'
 # index_col ='Unnamed: 0'
@@ -64,50 +71,54 @@ index_col ='id'
 rename_columns = {
 
 }
-# dt_name = 'data_dt'
-dt_name = None
+dt_name = 'data_dt'
 
 cst_base_info_sql = 'select * from'
 
 
 # drop_columns=[] #earliesCreditLine /issueYearMonth
 # drop_columns=['issueDate','employmentTitle','postCode','regionCode','earliesCreditLine'] #earliesCreditLine /issueYearMonth
-drop_columns=[] #earliesCreditLine /issueYearMonth
+drop_columns=['issueDate','earliesCreditLine'] #earliesCreditLine /issueYearMonth
 # drop_columns=['issueDate'] #earliesCreditLine /issueYearMonth
 
 #特征处理
-# miss_rate=0.85 #缺失率阈值
-miss_rate=0.95 #缺失率阈值
-same_value_rate=0.95 #同值率剔除阈值
-# same_value_rate=0.85 #同值率剔除阈值
-# y_target='deposit' #目标Y字段名
-y_target='creditability' #目标Y字段名
-
+miss_rate=0.85 #缺失率阈值
+# miss_rate=0.95 #缺失率阈值
+# same_value_rate=0.95 #同值率剔除阈值
+same_value_rate=0.85 #同值率剔除阈值
+y_target='isDefault' #目标Y字段名
 # y_target='Outcome' #目标Y字段名
 # y_target='SeriousDlqin2yrs' #目标Y字段名
 
 v_threshold = 0.01 #方差剔除阈值
-min_value_count = 5 #类别变量最低要求频数
+min_value_count = 50 #类别变量最低要求频数
 
 
-#IV
+#IV & 分箱设置
 bin_method = 'chimerge' #分箱方法，tree | chimerge 决策树或卡方分箱
 # min_iv_limit=0.02
 min_iv_limit=0.000
 # max_iv_limit=0.6
-# max_iv_limit=0.9
-max_iv_limit=1000
+max_iv_limit=0.9
+# max_iv_limit=1000
 
-max_num_bin = 3 #最大分箱数
+max_num_bin = 5 #最大分箱数
+
+#自定义分箱
+# breaks_list = {
+#     'age': [26, 35, 40],
+#     'guarantors': ["none", "co-applicant%,%guarantor"]
+# }
+breaks_list  =None
 
 
 #相关性系数剔除
-# corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
-corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
+corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
+# corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
 
 #稳定性剔除
-# csi_threshold=0.85 #CSI稳定性剔除阈值
-csi_threshold=0.999 #CSI稳定性剔除阈值
+csi_threshold=0.85 #CSI稳定性剔除阈值
+# csi_threshold=0.999 #CSI稳定性剔除阈值
 
 #树模型剔除变量
 forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
@@ -120,7 +131,7 @@ forest_select_max_depth=3 #树的最大深度
 rorestFeatureProcess = None
 
 #过采样、降采样配置
-imbalance_process = ImbalanceProcess(imbalance_type=None,#采样方案:under_sample、 over_sample、mix_sample,None
+imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
                                      desired_ratio=1, #目标降采样或者过采样后少数样本占多数样本比例
                                      under_desired_ratio=1/4,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
                                      y_target=y_target)
@@ -207,8 +218,12 @@ double_feature_process = [
                      model_dir=model_dir, y_target=y_target),
     CorrFeatureProcess(corr_threshold=corr_threshold, y_target=y_target),
     CSIFeatureProcess(csi_threshold=csi_threshold, model_dir=model_dir, y_target=y_target),
-    rorestFeatureProcess,
-    imbalance_process
+    rorestFeatureProcess
+]
+
+#后处理，如：欠采样、过采样、特征选择等
+post_process = [
+imbalance_process
 ]
 
 oot_feature_process = [
@@ -259,6 +274,7 @@ mlModel=MLModel(
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process
     ,csi_feature_process=csi_feature_process
+    ,post_process=post_process
 #     ,feature_encoder = feature_encoder
     ,sheet_name=sheet_name
     ,var_zh_name=var_zh_name
@@ -266,7 +282,7 @@ mlModel=MLModel(
     ,need_pre_process=need_pre_process
     ,user_profile_label_rules=user_profile_label_rules
     ,index_col=index_col,
-    model_instance='bank_model_instance1'
+    model_instance='model_instance1'
 )
 
 
