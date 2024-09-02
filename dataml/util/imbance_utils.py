@@ -48,6 +48,7 @@ def under_sample_en(X, y, y_target, desired_ratio):
         df_balanced = df_balanced.sample(frac=1, random_state=42)
     else:
         # 当前比例已经满足或低于设定的比例，不需要降采样
+        logger.warning('当前比例已经满足或低于设定的比例，不需要降采样')
         df_balanced = df
 
     # 分离 X 和 y

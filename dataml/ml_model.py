@@ -331,8 +331,8 @@ class MLModel:
         gc.collect()
         gc.collect()
         #特征归一化
-        X = self.feature_scaler(X, model='train')
-        X_test = self.feature_scaler(X_test, model='test')
+        # X = self.feature_scaler(X, model='train')
+        # X_test = self.feature_scaler(X_test, model='test')
 
         #特征编码
         if  'onehot' in  encoder_type :
@@ -344,16 +344,16 @@ class MLModel:
 
         self.encoder_type = encoder_type
 
-        X = self.feature_encoding(X, model='train')
-        X_test = self.feature_encoding(X_test, model='test')
+        X = self.feature_encoding(X, model='train',encoder_type=self.encoder_type)
+        X_test = self.feature_encoding(X_test, model='test',encoder_type=self.encoder_type)
 
-        X.replace([np.inf, -np.inf], np.nan, inplace=True)
-        # 使用列的平均值替换 NaN 值
-        X.fillna(X.mean(), inplace=True)
-
-        X_test.replace([np.inf, -np.inf], np.nan, inplace=True)
-        # 使用列的平均值替换 NaN 值
-        X_test.fillna(X_test.mean(), inplace=True)
+        # X.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # # 使用列的平均值替换 NaN 值
+        # X.fillna(X.mean(), inplace=True)
+        #
+        # X_test.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # # 使用列的平均值替换 NaN 值
+        # X_test.fillna(X_test.mean(), inplace=True)
 
         self.feature_encoder.persist(X,y,target=self.y_target,model_type='train')
         self.feature_encoder.persist(X_test, y_test, target=self.y_target, model_type='test')
@@ -422,7 +422,7 @@ class MLModel:
 
 
         # 特征归一化
-        df = self.feature_scaler(df, model='test')
+        # df = self.feature_scaler(df, model='test')
 
         if  'onehot' in  encoder_type :
             self.feature_encoder = self.onehot_encoder
@@ -434,7 +434,7 @@ class MLModel:
         self.encoder_type = encoder_type
 
         # 特征编码
-        X = self.feature_encoding(df, model='test')
+        X = self.feature_encoding(df, model='test',encoder_type=self.encoder_type)
 
         gc.collect()
 
@@ -495,7 +495,7 @@ class MLModel:
         gc.collect()
 
         # 特征归一化
-        df = self.feature_scaler(df, model='test')
+        # df = self.feature_scaler(df, model='test')
 
 
         # 特征编码
@@ -506,7 +506,7 @@ class MLModel:
         else:
             self.feature_encoder = self.onehot_encoder
 
-        X = self.feature_encoding(df, model='test')
+        X = self.feature_encoding(df, model='test',encoder_type=self.encoder_type)
         gc.collect()
         gc.collect()
         logger.debug(X.shape)
@@ -541,14 +541,31 @@ class MLModel:
                     prob_distplot(pred_df, var_name='prob', bins=10)
             return pred_df
 
-    def feature_encoding(self, X,model='train'):
+    def feature_encoding(self, X,model='train',encoder_type='onehot'):
         '''
         feature encoding
         :param X:
         :param model:
         :return:
         '''
-        return self.feature_encoder.encode(X=X,flag=model)
+        # 特征编码
+        if 'onehot' in encoder_type:
+            self.feature_encoder = self.onehot_encoder
+        # elif 'woe' in  encoder_type :
+        #     self.feature_encoder = self.woe_encoder
+        else:
+            self.feature_encoder = self.woe_encoder
+
+        # 特征归一化
+        X = self.feature_scaler(X, model=model)
+        X = self.feature_encoder.encode(X=X, flag=model)
+        X.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # 使用列的平均值替换 NaN 值
+        X.fillna(X.mean(), inplace=True)
+        return X
+
+
+
 
     def feature_scaler(self, X, model='train'):
         """

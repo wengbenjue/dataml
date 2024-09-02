@@ -1058,7 +1058,10 @@ def Score(prod, odds0, Basepoints=600, PDO=20):
     A = aabb['A']
     B = aabb['B']
     #     return int(A -B*math.log(prod/(1-prod)))
-    return int(A + B * math.log(prod / (1 - prod+0.01)))
+    log_v = prod / (1 - prod+0.01)
+    if log_v <=0:
+        log_v = 0.001
+    return int(A + B * math.log(log_v))
 
 
 def prob_plot(score, prob):
