@@ -311,9 +311,10 @@ class MLModel:
 
 
     def train(self, model_type=None,encoder_type='onehot'):
-        """
-        train model
 
+        """Paramas:
+         model_type:模型类型
+         encoder_type:编码类型,onehot,woe,none/None
         """
 
         logger.info('开始训练...')
@@ -335,12 +336,13 @@ class MLModel:
         # X_test = self.feature_scaler(X_test, model='test')
 
         #特征编码
-        if  'onehot' in  encoder_type :
-            self.feature_encoder = self.onehot_encoder
-        # elif 'woe' in  encoder_type :
-        #     self.feature_encoder = self.woe_encoder
-        else:
-            self.feature_encoder = self.woe_encoder
+        if encoder_type is not None and 'none' != encoder_type:
+            if  'onehot' in  encoder_type :
+                self.feature_encoder = self.onehot_encoder
+            # elif 'woe' in  encoder_type :
+            #     self.feature_encoder = self.woe_encoder
+            else:
+                self.feature_encoder = self.woe_encoder
 
         self.encoder_type = encoder_type
 
@@ -355,8 +357,9 @@ class MLModel:
         # # 使用列的平均值替换 NaN 值
         # X_test.fillna(X_test.mean(), inplace=True)
 
-        self.feature_encoder.persist(X,y,target=self.y_target,model_type='train')
-        self.feature_encoder.persist(X_test, y_test, target=self.y_target, model_type='test')
+        if  self.feature_encoder is not None:
+            self.feature_encoder.persist(X,y,target=self.y_target,model_type='train')
+            self.feature_encoder.persist(X_test, y_test, target=self.y_target, model_type='test')
 
         logger.info('训练集特征维数：')
         logger.debug(X.shape)
@@ -367,14 +370,22 @@ class MLModel:
         if self.post_process is not None:
             if isinstance(self.post_process,list):
                 for process in self.post_process:
-                    X, y = process(X, y)
+                    X, y = process(X, y,mode='train',encoder_type=encoder_type)
+                    X_test, y_test = process(X_test, y_test,mode='test',encoder_type=encoder_type)
             else:
-                X, y = self.post_process(X, y)
+                X, y = self.post_process(X, y,mode='train',encoder_type=encoder_type)
+                X_test, y_test = self.post_process(X_test, y_test,mode='test',encoder_type=encoder_type)
 
         logger.info('训练集特征维数：')
         logger.debug(X.shape)
         logger.info('测试集特征维数：')
         logger.debug(X_test.shape)
+
+        y_distribution = y.value_counts()
+        logger.debug(y_distribution)
+        converted = y_distribution.rename_axis('unique_values').to_frame('counts')
+
+        circle_distrib(df_dis=converted.counts, labels=['negative', 'positive'])
 
         gc.collect()
         gc.collect()
@@ -423,13 +434,13 @@ class MLModel:
 
         # 特征归一化
         # df = self.feature_scaler(df, model='test')
-
-        if  'onehot' in  encoder_type :
-            self.feature_encoder = self.onehot_encoder
-        # elif 'woe' in  encoder_type :
-        #     self.feature_encoder = self.woe_encoder
-        else:
-            self.feature_encoder = self.woe_encoder
+        if encoder_type is not None and 'none' != encoder_type:
+            if  'onehot' in  encoder_type :
+                self.feature_encoder = self.onehot_encoder
+            # elif 'woe' in  encoder_type :
+            #     self.feature_encoder = self.woe_encoder
+            else:
+                self.feature_encoder = self.woe_encoder
 
         self.encoder_type = encoder_type
 
@@ -497,14 +508,14 @@ class MLModel:
         # 特征归一化
         # df = self.feature_scaler(df, model='test')
 
-
-        # 特征编码
-        if  'onehot' in  encoder_type :
-            self.feature_encoder = self.onehot_encoder
-        elif 'woe' in  encoder_type :
-            self.feature_encoder = self.woe_encoder
-        else:
-            self.feature_encoder = self.onehot_encoder
+        if encoder_type is not None and 'none' != encoder_type:
+            # 特征编码
+            if  'onehot' in  encoder_type :
+                self.feature_encoder = self.onehot_encoder
+            elif 'woe' in  encoder_type :
+                self.feature_encoder = self.woe_encoder
+            else:
+                self.feature_encoder = self.onehot_encoder
 
         X = self.feature_encoding(df, model='test',encoder_type=self.encoder_type)
         gc.collect()
@@ -549,7 +560,9 @@ class MLModel:
         :return:
         '''
         # 特征编码
-        if 'onehot' in encoder_type:
+        if   encoder_type is None or 'none' in encoder_type:
+            self.feature_encoder = None
+        elif 'onehot' in encoder_type:
             self.feature_encoder = self.onehot_encoder
         # elif 'woe' in  encoder_type :
         #     self.feature_encoder = self.woe_encoder
@@ -558,14 +571,13 @@ class MLModel:
 
         # 特征归一化
         X = self.feature_scaler(X, model=model)
-        X = self.feature_encoder.encode(X=X, flag=model)
+        if self.feature_encoder is not None:
+            X = self.feature_encoder.encode(X=X, flag=model)
+        # X = self.feature_encoder.encode(X=X, flag=model)
         X.replace([np.inf, -np.inf], np.nan, inplace=True)
         # 使用列的平均值替换 NaN 值
         X.fillna(X.mean(), inplace=True)
         return X
-
-
-
 
     def feature_scaler(self, X, model='train'):
         """
@@ -808,7 +820,7 @@ class MLModel:
             logger.debug(y_distribution)
             converted = y_distribution.rename_axis('unique_values').to_frame('counts')
             # plot the distribution
-            circle_distrib(df_dis=converted.counts, labels=['negative', 'positive'])
+            # circle_distrib(df_dis=converted.counts, labels=['negative', 'positive'])
 
         return iv_df,feature_result, df, y_df
 

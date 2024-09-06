@@ -2,7 +2,7 @@ from .base_feature_explain import BaseFeatureExplain
 import shap
 import matplotlib.pyplot as plt
 import pandas  as pd
-
+from ..util.my_logging import logger
 
 class ShapFeatureExplain(BaseFeatureExplain):
 
@@ -32,7 +32,13 @@ class ShapFeatureExplain(BaseFeatureExplain):
             # explainer = shap.TreeExplainer(model_best_modele.best_estimator_, masker=masker)
             explainer = shap.TreeExplainer(model_fit,feature_perturbation="interventional")
             shapvalues = explainer.shap_values(X=X,y=y)
-            shap.summary_plot(shapvalues[1], X, feature_names=columns)
+            try:
+                shap.summary_plot(shapvalues[1], X, feature_names=columns)
+            except:
+                try:
+                    shap.summary_plot(shapvalues, X, feature_names=columns)
+                except Exception as e:
+                    logger.error(e)
         else:
             # explainer = shap.LinearExplainer(model_fit, X, feature_perturbation="interventional")
             masker = shap.maskers.Independent(data=X)

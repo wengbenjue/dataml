@@ -252,7 +252,73 @@ def oversample_dataframe(df, y_target, positive_class_ratio,data_dir):
     df_onehot_inverse.fillna(df_onehot_inverse.mean(), inplace=True)
     return df_onehot_inverse
 
-def oversample_encoded(X, y, positive_class_ratio):
+
+from imblearn.over_sampling import SMOTE
+import pandas as pd
+import numpy as np
+import logging
+
+# 初始化日志记录器
+logger = logging.getLogger(__name__)
+
+def oversample_x_y(X, y, positive_class_ratio, data_dir):
+    """
+    根据指定的正样本比例对DataFrame进行过采样，并处理类别特征。
+
+    :param X: 特征数据集的DataFrame
+    :param y: 目标变量的DataFrame
+    :param positive_class_ratio: 目标正样本比例(少数类样本 / 多数类样本的比例)
+    :param data_dir: OneHot编码器模型存储目录
+    :return: 过采样后的特征和目标变量DataFrame
+    """
+
+    # 识别类别特征和数值特征
+    _, _, _, cat_features, num_features = feature_classify(X, target=y.name)
+    X_encoded = X.copy()
+
+    # 对类别特征进行OneHot编码
+    onehot_encoder = OnehotEncoder(model_dir=data_dir, y_target=y.name)
+    X_onehot_encoded = onehot_encoder.encode(X=X, flag='train', prefix='oversample_')
+
+    # 合并编码后的数据
+    X_encoded = pd.concat([X_onehot_encoded], axis=1)
+
+    # 计算类别的数量
+    n_pos = sum(y == 1)
+    n_neg = sum(y == 0)
+
+    # 计算实际正样本比例
+    actual_positive_ratio = n_pos / n_neg
+    logger.debug(f'Actual positive(1) ratio: {round(actual_positive_ratio, 2)}')
+    logger.debug(f'Expected positive(1) ratio: {round(positive_class_ratio, 2)}')
+
+    # 检查设定的正样本比例是否合理
+    if positive_class_ratio <= actual_positive_ratio:
+        logger.warning('The desired positive class ratio is less than or equal to the actual ratio. No oversampling needed.')
+        return X, y
+
+    # 计算过采样的目标数量
+    target_pos = int(n_neg * positive_class_ratio)
+
+    # 使用SMOTE进行过采样
+    smote = SMOTE(sampling_strategy=positive_class_ratio)
+    X_resampled, y_resampled = smote.fit_resample(X_encoded, y)
+
+    # 将过采样后的数据重新组装成DataFrame
+    X_resampled_df = pd.DataFrame(X_resampled, columns=X_encoded.columns)
+
+    # 恢复OneHot编码前的类别特征
+    X_inverse_encoded = onehot_encoder.encode(X=X_resampled_df, flag='inverse_transform', prefix='oversample_', inverse_cat_features=cat_features)
+
+    # 替换目标变量
+    X_inverse_encoded[y.name] = y_resampled
+    X_inverse_encoded.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+    # 使用列的平均值替换 NaN 值
+    X_inverse_encoded.fillna(X_inverse_encoded.mean(), inplace=True)
+
+    return X_inverse_encoded.drop(columns=[y.name]), X_inverse_encoded[y.name]
+def oversample_encoded(X, y, positive_class_ratio,encoder_type='onehot'):
     """
     根据指定的正样本比例对DataFrame进行过采样，并处理类别特征。
 
@@ -378,7 +444,7 @@ def mixed_sampling_with_categorical(df, desired_ratio=0.5, y_target='target',und
 
     return df_mixed
 
-def mixed_sampling_with_categorical_encoded(X,y, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5,data_dir=None):
+def mixed_sampling_with_categorical_encoded(X,y, desired_ratio=0.5, y_target='target',under_desired_ratio = 0.5,data_dir=None,encoder_type='onehot'):
     """
        混合采样，按指定目标比例进行过采样和欠采样。
 
@@ -400,7 +466,10 @@ def mixed_sampling_with_categorical_encoded(X,y, desired_ratio=0.5, y_target='ta
     X,y = under_sample_en(X,y, y_target=y_target, desired_ratio=r_under)
 
     # 进行过采样
-    X_sampled, y_sampled = oversample_encoded(X, y, positive_class_ratio=r_over)
+    if encoder_type is None or encoder_type == 'none':
+        X_sampled, y_sampled = oversample_x_y(X, y, positive_class_ratio=r_over, data_dir=data_dir)
+    else:
+        X_sampled, y_sampled = oversample_encoded(X, y, positive_class_ratio=r_over)
 
     return X_sampled, y_sampled
 

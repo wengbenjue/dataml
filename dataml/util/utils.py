@@ -866,7 +866,8 @@ def show_feature_importance(best_model,cols, data_dict_path: str, left_on_name: 
     # plt.show()
 
     plt.figure(figsize=(16, 16))
-    sns.barplot(data=feature_imp_plt_sort, x='feature_importance', y=var_zh_name)
+    # sns.barplot(data=feature_imp_plt_sort, x='feature_importance', y=var_zh_name)
+    sns.barplot(data=feature_imp_plt_top20, x='feature_importance', y=var_zh_name)
     plt.title('feature importance')
     plt.show()
 
@@ -1416,10 +1417,10 @@ def model_test_eval(model_fit,
 
     #PR曲线
     # 计算精确率和召回率
-    logger.info('PR Curve Of {}...'.format(flag))
-    precision, recall, _ = precision_recall_curve(y_test, y_score_test)
+    # logger.info('PR Curve Of {}...'.format(flag))
+    # precision, recall, _ = precision_recall_curve(y_test, y_score_test)
     # 绘制 PR 曲线
-    plot_pr(recall, precision)
+    # plot_pr(recall, precision)
 
     #混淆矩阵
     logger.info('Confusion Matrix of {} Data...'.format(flag))

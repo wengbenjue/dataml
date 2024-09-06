@@ -1,5 +1,6 @@
 from dataml.ml_model import MLModel
 from dataml.model.lightgbm_model import LightGBMModel
+from dataml.model.catboost_model import CatBoostModel
 from dataml.model.logistic_regression_model import LogisticRegressionModel
 from dataml.model.decision_tree_model import DecisionTreeModel
 from dataml.feature_explain import ShapFeatureExplain
@@ -132,9 +133,11 @@ rorestFeatureProcess = None
 
 #过采样、降采样配置
 imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
-                                     desired_ratio=1, #目标降采样或者过采样后少数样本占多数样本比例
+                                     desired_ratio=1/2, #目标降采样或者过采样后少数样本占多数样本比例
                                      under_desired_ratio=1/4,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
-                                     y_target=y_target)
+                                     y_target=y_target,
+                                     imbalance_test=True#测试集是否需要进行采样操作
+                                     )
 
 
 #模型参数
@@ -169,6 +172,10 @@ decistion_tree_params ={
             'min_impurity_split':None,
             'min_weight_fraction_leaf':0.0
             }
+
+#catboost
+catboost_params = { 'iterations':100, 'learning_rate':0.05,'depth':5,'class_weights': [1, 4]}
+
 class_names=['0_negative','1_positive'] #分类标签
 
 #评分卡参数
@@ -243,6 +250,7 @@ csi_feature_process = [
 
 shapFeatureExplain = ShapFeatureExplain()
 lgb_explain_models = [shapFeatureExplain]
+catboost_explain_models = [shapFeatureExplain]
 decisition_tree_explain_models = [shapFeatureExplain]
 lr_explain_models = [shapFeatureExplain]
 
@@ -268,6 +276,7 @@ mlModel=MLModel(
                                     class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,
                                      model_dir=model_dir,params_optimize=params_optimize,params=lr_params)
             ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize,params=lgb_params)
+             ,CatBoostModel(explain_models=catboost_explain_models,params_optimize=params_optimize,params=catboost_params)
             ,DecisionTreeModel(explain_models=decisition_tree_explain_models,params_optimize=params_optimize,params=decistion_tree_params,class_names=class_names)
              ]
     ,uni_feature_process = uni_feature_process

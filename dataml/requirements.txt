@@ -19,3 +19,5 @@ psycopg2-binary==2.8.6
 colorama==0.4.5
 bayesian-optimization==1.4.1
 imbalanced-learn==0.8.0
+colorlog==6.8.2
+catboost==0.26
