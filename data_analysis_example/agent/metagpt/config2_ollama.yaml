@@ -1,5 +1,0 @@
-#https://docs.deepwisdom.ai/main/en/guide/get_started/configuration/llm_api_configuration.html
-llm:
-  api_type: 'ollama'
-  base_url: 'http://127.0.0.1:11434/v1/'
-  model: 'qwen2:latest'
