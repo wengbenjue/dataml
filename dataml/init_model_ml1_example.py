@@ -1,6 +1,8 @@
 from dataml.ml_model import MLModel
 from dataml.model.lightgbm_model import LightGBMModel
+from dataml.model.catboost_model import CatBoostModel
 from dataml.model.logistic_regression_model import LogisticRegressionModel
+from dataml.model.decision_tree_model import DecisionTreeModel
 from dataml.feature_explain import ShapFeatureExplain
 import os
 
@@ -12,6 +14,7 @@ from dataml.datasets import (
 
 from dataml.feature_process import (
     FeatureProcess,
+    CleanPreProcessFeatureProcess,
     MissValueFeatureProcess,
     MostValueValueFeatureProcess,
     VarDerivaticeFeatureProcess,
@@ -28,10 +31,6 @@ from dataml.feature_process import (
     ImbalanceProcess
 )
 
-from dataml.feature_encoder import (
-OnehotEncoder,
-WoeEncoder
-)
 
 
 from .feature_process.var_derivatice_feature_process import ScoreCardDerivationFeatureProcess
@@ -79,59 +78,107 @@ cst_base_info_sql = 'select * from'
 
 
 # drop_columns=[] #earliesCreditLine /issueYearMonth
-# drop_columns=['issueDate','employmentTitle','postCode','regionCode'] #earliesCreditLine /issueYearMonth
-drop_columns=['issueDate'] #earliesCreditLine /issueYearMonth
+# drop_columns=['issueDate','employmentTitle','postCode','regionCode','earliesCreditLine'] #earliesCreditLine /issueYearMonth
+drop_columns=['issueDate','earliesCreditLine'] #earliesCreditLine /issueYearMonth
+# drop_columns=['issueDate'] #earliesCreditLine /issueYearMonth
 
 #特征处理
-# miss_rate=0.85 #缺失率阈值
-miss_rate=0.95 #缺失率阈值
-same_value_rate=0.95 #同值率剔除阈值
-# same_value_rate=0.85 #同值率剔除阈值
+miss_rate=0.85 #缺失率阈值
+# miss_rate=0.95 #缺失率阈值
+# same_value_rate=0.95 #同值率剔除阈值
+same_value_rate=0.85 #同值率剔除阈值
 y_target='isDefault' #目标Y字段名
 # y_target='Outcome' #目标Y字段名
 # y_target='SeriousDlqin2yrs' #目标Y字段名
 
 v_threshold = 0.01 #方差剔除阈值
 min_value_count = 50 #类别变量最低要求频数
-stats_file = os.path.join(model_dir,'state_file.json') #缺失率填充分布序列化文件名
 
-#IV
+
+#IV & 分箱设置
 bin_method = 'chimerge' #分箱方法，tree | chimerge 决策树或卡方分箱
 # min_iv_limit=0.02
-min_iv_limit=0.001
-# max_iv_limit=0.5
-max_iv_limit=1000
+min_iv_limit=0.000
+# max_iv_limit=0.6
+max_iv_limit=0.9
+# max_iv_limit=1000
+
+max_num_bin = 5 #最大分箱数
+
+#自定义分箱
+# breaks_list = {
+#     'age': [26, 35, 40],
+#     'guarantors': ["none", "co-applicant%,%guarantor"]
+# }
+breaks_list  =None
+
+
 #相关性系数剔除
-# corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
-corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
+corr_threshold= 0.85 #皮尔逊相关性系数剔除阈值
+# corr_threshold= 0.999 #皮尔逊相关性系数剔除阈值
 
 #稳定性剔除
-# csi_threshold=0.85 #CSI稳定性剔除阈值
-csi_threshold=0.999 #CSI稳定性剔除阈值
+csi_threshold=0.85 #CSI稳定性剔除阈值
+# csi_threshold=0.999 #CSI稳定性剔除阈值
 
 #树模型剔除变量
-# forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
-forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
+forest_select_cumulative_importance=0.95 #树模型累计重要性阈值
+# forest_select_cumulative_importance=0.9999 #树模型累计重要性阈值
 forest_select_max_depth=3 #树的最大深度
 
-# use_woe = False
-use_woe = False
+# rorestFeatureProcess = ForestFeatureProcess(miss_rate=miss_rate,corr_threhold=corr_threshold,
+#                          forest_select_cumutative_importance=forest_select_cumulative_importance,
+#                          max_depth=forest_select_max_depth,y_target=y_target)
+rorestFeatureProcess = None
 
 #过采样、降采样配置
-imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案under_sample、 over_sample、mix_sample
-                                     desired_ratio=4, #降采样或者让过采样正负样本比例，只在imbalance_type='under_sample'或者imbalance_type='over_sample'时有效
-                                     oversample_strategy=0.5,#只在imbalance_type='mix_sample'生效，过采样比例，如0.2代表采样后少数类样本占比多数类样本的20%
-                                     undersample_strategy=0.5,#只在imbalance_type='mix_sample'生效，将采样比例，如0.5代表采样后多数类样本是少数类样本的2倍
-                                     y_target=y_target)
+imbalance_process = ImbalanceProcess(imbalance_type='mix_sample',#采样方案:under_sample、 over_sample、mix_sample
+                                     desired_ratio=1/2, #目标降采样或者过采样后少数样本占多数样本比例
+                                     under_desired_ratio=1/4,#只在imbalance_type='mix_sample'生效，降采样需要达到的目标少类样本（y=1）占多类样本的比例(y=0)
+                                     y_target=y_target,
+                                     imbalance_test=True#测试集是否需要进行采样操作
+                                     )
 
 
 #模型参数
-
 #类别权重 逻辑回归
 class_weight= 'balanced'
 class_weights= [{1:1.0,0:1.0},{1:2.0,0:1.0}]
 #是否需要超参优化
 params_optimize=False
+
+lr_params ={'C': 0.5,
+                'penalty': 'l1',
+                'solver': 'liblinear',
+                'class_weight':class_weight,
+                'max_iter': 200}
+lgb_params = {'application': 'binary', 'num_iterations':100, 'learning_rate':0.05, 'n_estimators':200, 'num_leaves':48, 'device':'cpu',
+             'max_depth':7, 'boosting':'gbdt', 'objective':['binary'], 'max_bin':510, 'lambda_l1':5, 'lambda_l2':10, 'metric':'binary_error',
+             'subsample_for_bin':200, 'random_state':500, 'colsample_bytree':0.53, 'subsample':0.8, 'min_split_gain':5, 'min_child_weight':0.01,
+             'min_child_samples':313, 'reg_alpha': 1, 'reg_lambda':2, 'sumsample':0.88, 'scale_pos_weight':1.0}
+
+decistion_tree_params ={
+            'max_depth':3,
+            'criterion':'gini', #entropy  gini
+            'splitter':'best',
+            'min_samples_split': 2,
+            'min_samples_leaf': 1,
+            'max_features': None,
+            'random_state': None,
+            'max_leaf_nodes': None,
+            'class_weight': None,
+            'ccp_alpha': 0.0,
+            'min_impurity_decrease':0.0,
+            'min_impurity_split':None,
+            'min_weight_fraction_leaf':0.0
+            }
+
+#catboost
+catboost_params = { 'iterations':100, 'learning_rate':0.05,
+                            'depth':3,
+                            'class_weights': [1, 5],'eval_metric':'AUC'}
+
+class_names=['0_negative','1_positive'] #分类标签
 
 #评分卡参数
 Basepoints=600 #评分卡基础分
@@ -162,6 +209,7 @@ user_profile_label_rules = [
 default_warehouse = DefaultWarehouse(warehouse_address=warehouse_address, need_reload_data=need_reload_data)
 
 uni_feature_process = [
+    CleanPreProcessFeatureProcess(y_target=y_target),
     ScoreCardDerivationFeatureProcess(),
     VarDropFeatureProcess(drop_columns=drop_columns),
     CatClusterValueFeatureProcess(min_value_count=min_value_count, y_target=y_target),
@@ -170,38 +218,45 @@ uni_feature_process = [
     VarianceThresholdFeatureProcess(v_threshold=v_threshold, y_target=y_target),
     OutlierFeatureProcess(cache_dir=cache_dir, y_target=y_target),
     QuartileFeatureProcess(y_target=y_target),
-    MissValueFillFeatureProcess(stats_file=stats_file,y_target=y_target)
+    MissValueFillFeatureProcess(model_dir=model_dir,y_target=y_target)
 ]
 
 double_feature_process = [
     IVFeatureProcess(bin_method=bin_method, min_iv_limit=min_iv_limit, max_iv_limit=max_iv_limit,
+                     max_num_bin = max_num_bin,
                      model_dir=model_dir, y_target=y_target),
     CorrFeatureProcess(corr_threshold=corr_threshold, y_target=y_target),
     CSIFeatureProcess(csi_threshold=csi_threshold, model_dir=model_dir, y_target=y_target),
-    ForestFeatureProcess(miss_rate=miss_rate,corr_threhold=corr_threshold,
-                         forest_select_cumutative_importance=forest_select_cumulative_importance,
-                         max_depth=forest_select_max_depth,y_target=y_target),
-    imbalance_process
+    rorestFeatureProcess
+]
+
+#后处理，如：欠采样、过采样、特征选择等
+post_process = [
+imbalance_process
 ]
 
 oot_feature_process = [
+    CleanPreProcessFeatureProcess(y_target=y_target),
     ScoreCardDerivationFeatureProcess(),
     OutlierFeatureProcess(cache_dir=cache_dir,y_target=y_target),
-    MissValueFillFeatureProcess(stats_file=stats_file,y_target=y_target)
+    MissValueFillFeatureProcess(model_dir=model_dir,y_target=y_target)
 ]
 
 csi_feature_process = [
+    CleanPreProcessFeatureProcess(y_target=y_target),
     ScoreCardDerivationFeatureProcess(),
     CatClusterValueFeatureProcess(min_value_count=min_value_count,y_target=y_target),
     OutlierFeatureProcess(cache_dir=cache_dir,y_target=y_target),
-    MissValueFillFeatureProcess(stats_file=stats_file,y_target=y_target)
+    MissValueFillFeatureProcess(model_dir=model_dir,y_target=y_target)
 ]
 
 shapFeatureExplain = ShapFeatureExplain()
 lgb_explain_models = [shapFeatureExplain]
+catboost_explain_models = [shapFeatureExplain]
+decisition_tree_explain_models = [shapFeatureExplain]
 lr_explain_models = [shapFeatureExplain]
 
-feature_encoder =  WoeEncoder(model_dir=model_dir) if use_woe else OnehotEncoder(model_dir=model_dir,y_target=y_target)
+# feature_encoder =  WoeEncoder(model_dir=model_dir) if use_woe else OnehotEncoder(model_dir=model_dir,y_target=y_target)
 
 mlModel=MLModel(
     cache_dir = cache_dir
@@ -211,7 +266,7 @@ mlModel=MLModel(
     ,need_tsne_visuz = False
     ,need_recall_negative=False
     ,negative_sim_threshold = 0.35
-    ,test_ratio=0.3 #训练测试集划分标准
+    ,test_ratio=0.2 #训练测试集划分标准
     ,min_lift=1.5
     ,drop_columns= drop_columns
     ,train_dataset=LocalDataset(data_path=train_file_path, index_col=index_col,dtype=dtype,y_target=y_target)
@@ -220,19 +275,25 @@ mlModel=MLModel(
     ,out_dataset= LocalDataset(data_path=train_file_path, index_col=index_col,dtype=dtype,file_name=outputlist_filename,model_dir=model_dir,y_target=y_target)
     ,cst_base_info_dataset =LocalDataset(data_path=train_file_path, index_col=index_col,y_target=y_target)
     ,models=[LogisticRegressionModel(explain_models=lr_explain_models, class_weight=class_weight,
-                                    class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,use_woe=use_woe,model_dir=model_dir,params_optimize=params_optimize)
-            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize)]
+                                    class_weights=class_weights,Basepoints=Basepoints,PDO=PDO,
+                                     model_dir=model_dir,params_optimize=params_optimize,params=lr_params)
+            ,LightGBMModel(explain_models=lgb_explain_models,params_optimize=params_optimize,params=lgb_params)
+             ,CatBoostModel(explain_models=catboost_explain_models,params_optimize=params_optimize,params=catboost_params)
+            ,DecisionTreeModel(explain_models=decisition_tree_explain_models,params_optimize=params_optimize,params=decistion_tree_params,class_names=class_names)
+             ]
     ,uni_feature_process = uni_feature_process
     ,double_feature_process=double_feature_process
     ,oot_feature_process=oot_feature_process
     ,csi_feature_process=csi_feature_process
-    ,feature_encoder = feature_encoder
+    ,post_process=post_process
+#     ,feature_encoder = feature_encoder
     ,sheet_name=sheet_name
     ,var_zh_name=var_zh_name
     ,var_en_name=var_en_name
     ,need_pre_process=need_pre_process
     ,user_profile_label_rules=user_profile_label_rules
-    ,index_col=index_col
+    ,index_col=index_col,
+    model_instance='model_instance1'
 )
 
 
