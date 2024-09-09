@@ -174,7 +174,9 @@ decistion_tree_params ={
             }
 
 #catboost
-catboost_params = { 'iterations':100, 'learning_rate':0.05,'depth':5,'class_weights': [1, 4]}
+catboost_params = { 'iterations':100, 'learning_rate':0.05,
+                            'depth':3,
+                            'class_weights': [1, 5],'eval_metric':'AUC'}
 
 class_names=['0_negative','1_positive'] #分类标签
 

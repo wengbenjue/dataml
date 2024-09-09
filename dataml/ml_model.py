@@ -421,7 +421,7 @@ class MLModel:
             gc.collect()
             gc.collect()
 
-    def outtime(self, model_type=None,encoder_type='onehot'):
+    def outtime(self, model_type=None,encoder_type='onehot',need_load_model=True):
         ...
         logger.info('model predict starting...')
         self.load_model_features()
@@ -462,7 +462,8 @@ class MLModel:
         # 加载模型
         for model in filter_models:
             logger.info('current model:{}'.format(model.name))
-            model.load(self.model_dir,encoder_type=self.encoder_type)
+            if need_load_model :
+                model.load(self.model_dir,encoder_type=self.encoder_type)
 
             y_score_test,y_pred_test,test_df  = model.evaluate_test(
                 X,
@@ -577,6 +578,11 @@ class MLModel:
         X.replace([np.inf, -np.inf], np.nan, inplace=True)
         # 使用列的平均值替换 NaN 值
         X.fillna(X.mean(), inplace=True)
+
+        if encoder_type is None or 'none' in encoder_type:
+            _, _, _, cat_features, num_features = feature_classify(X, target=self.y_target)
+            for col in self.cat_features:
+                X[col] = X[col].astype('category')
         return X
 
     def feature_scaler(self, X, model='train'):

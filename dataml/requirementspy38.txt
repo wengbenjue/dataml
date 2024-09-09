@@ -22,4 +22,4 @@ imbalanced-learn==0.8.0
 graphviz==0.20.1
 wordcloud==1.9.3
 colorlog==6.8.2
-catboost==0.26
+catboost==1.2.6

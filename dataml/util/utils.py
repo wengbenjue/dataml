@@ -1323,7 +1323,6 @@ def model_predict(model_fit, X):
     :param X:
     :return:
     """
-
     y_score = model_fit.predict_proba(X)[:, 1]
     y_pred = model_fit.predict(X)
     df = X.copy()
