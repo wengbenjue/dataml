@@ -376,6 +376,20 @@ class MLModel:
                 X, y = self.post_process(X, y,mode='train',encoder_type=encoder_type)
                 X_test, y_test = self.post_process(X_test, y_test,mode='test',encoder_type=encoder_type)
 
+
+        if encoder_type is None or 'none' in encoder_type:
+            cateorical_features = list(X.select_dtypes(include=pd.Categorical).columns)
+            for col in cateorical_features:
+                X[col] = X[col].astype('category')  # 先转换为类别类型
+                X[col] = X[col].cat.codes  # 然后使用 cat.codes 编码为整数
+                X[col] = X[col].replace(-1, X[col].max() + 1)  # 若存在空值，替换为最大类别值+1
+
+                X_test[col] = X_test[col].astype('category')  # 先转换为类别类型
+                X_test[col] = X_test[col].cat.codes  # 然后使用 cat.codes 编码为整数
+                X_test[col] = X_test[col].replace(-1, X[col].max() + 1)  # 若存在空值，替换为最大类别值+1
+            print(X_test[cateorical_features].dtypes)
+
+
         logger.info('训练集特征维数：')
         logger.debug(X.shape)
         logger.info('测试集特征维数：')
@@ -390,6 +404,8 @@ class MLModel:
         gc.collect()
         gc.collect()
 
+
+
         if model_type is not  None:
             filter_models = [model for model in self.models if model.model_type in model_type]
         if model_type is None:
@@ -401,7 +417,7 @@ class MLModel:
             logger.info('{} training'.format(model.name))
 
 
-            model.train(X,y)
+            model.train(X,y,encoder_type=encoder_type)
 
             model.persist(self.model_dir,encoder_type=self.encoder_type)
             #model evalueate
@@ -518,7 +534,7 @@ class MLModel:
             else:
                 self.feature_encoder = self.onehot_encoder
 
-        X = self.feature_encoding(df, model='test',encoder_type=self.encoder_type)
+        X = self.feature_encoding(df, model='test',encoder_type=encoder_type)
         gc.collect()
         gc.collect()
         logger.debug(X.shape)
@@ -581,8 +597,11 @@ class MLModel:
 
         if encoder_type is None or 'none' in encoder_type:
             _, _, _, cat_features, num_features = feature_classify(X, target=self.y_target)
-            for col in self.cat_features:
-                X[col] = X[col].astype('category')
+            for col in cat_features:
+                X[col] = X[col].astype('category')  # 先转换为类别类型
+                X[col] = X[col].cat.codes  # 然后使用 cat.codes 编码为整数
+                X[col] = X[col].replace(-1, X[col].max() + 1)  # 若存在空值，替换为最大类别值+1
+                # print(X.dtypes)  # 确保所有列都是int、float或bool类型
         return X
 
     def feature_scaler(self, X, model='train'):

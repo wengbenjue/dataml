@@ -4,6 +4,8 @@ import pickle
 import lightgbm as lgb
 from typing import List
 
+import pandas as pd
+
 from ..util.utils import lgbm_evaluate
 from ..util.utils import model_predict,model_predict_eval,model_test_eval,show_feature_importance
 from .base_model import BaseModel
@@ -56,8 +58,11 @@ class LightGBMModel(BaseModel):
                                     ,scale_pos_weight=self.params['scale_pos_weight']
                                    )
     def load(self, model_dir,encoder_type='onehot_encoder'):
+        if encoder_type is None:
+            encoder_type = 'none'
         #加载模型
         self.model_fit = pickle.load(open(os.path.join(model_dir,encoder_type+'_lgb_model.pickle'),'rb'))
+        self.model = self.model_fit
 
     def model_feature_importance(self, X,data_dir_path,iv_df=None, data_dir='.'):
         feature_imp,data_map = show_feature_importance(self.model_fit,cols=list(X.columns),
@@ -89,10 +94,20 @@ class LightGBMModel(BaseModel):
                 logger.debug(explain_model)
                 explain_model.var_explain(model_fit=self.model_fit,X=X_test,y=y_test,data_dict=data_map,exlpain_type='tree')
 
-    def train(self, X, y):
+    def train(self, X, y,encoder_type='onehot_encoder'):
         self.hyperparams_search(X,y)
         # self.model_fit = self.model.fit(X,y)
-        self.model.fit(X,y)
+        if encoder_type is None or 'none' in encoder_type:
+            cateorical_features = list(X.select_dtypes(include=pd.Categorical).columns)
+            # for col in cateorical_features:
+            #     X[col] = X[col].astype('category')  # 先转换为类别类型
+            #     X[col] = X[col].cat.codes  # 然后使用 cat.codes 编码为整数
+            #     X[col] = X[col].replace(-1, X[col].max() + 1)  # 若存在空值，替换为最大类别值+1
+            # print(X[cateorical_features].dtypes)
+            self.model.fit(X, y,categorical_feature=cateorical_features)
+        else:
+            self.model.fit(X,y)
+
         self.model_fit = self.model
 
     def predict(self, X):
@@ -104,6 +119,8 @@ class LightGBMModel(BaseModel):
             return y_score,y_pred,df
 
     def persist(self, model_dir,encoder_type='onehot_encoder'):
+        if encoder_type is None:
+            encoder_type = 'none'
         #保存模型
         with open(os.path.join(model_dir,encoder_type+'_lgb_model.pickle'),'wb') as f:
             # pickle.dump(self.model_fit,f)

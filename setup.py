@@ -5,7 +5,7 @@ _PATH_ROOT = os.path.dirname(__file__)
 
 setup(
     name="dataml",
-    version="1.1.0",
+    version="1.1.1",
     description="data analysis machine learning",
     author="",
     url="",

@@ -15,7 +15,7 @@ class BaseModel:
     def feature_explain(self, X_test, y_test, data_map=None):
         pass
 
-    def train(self, X, y):
+    def train(self, X, y,encoder_type='onehot_encoder'):
         pass
 
     def predict(self, X):

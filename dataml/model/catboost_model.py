@@ -115,7 +115,7 @@ class CatBoostModel(BaseModel):
                 logger.debug(explain_model)
                 explain_model.var_explain(model_fit=self.model_fit,X=X_test,y=y_test,data_dict=data_map,exlpain_type='tree')
 
-    def train(self, X, y):
+    def train(self, X, y,encoder_type='onehot_encoder'):
         self.hyperparams_search(X,y)
         # self.model_fit = self.model.fit(X,y)
         X.replace('Unknown', pd.NA, inplace=True)
