@@ -101,7 +101,7 @@ class CatBoostModel(BaseModel):
         except Exception as e:
             feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].to_csv(
                 os.path.join(data_dir, self.model_type + '_feature_importance.csv'))
-            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance', 'IV']].head(30))
+            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].head(30))
         return  feature_imp,data_map
 
 

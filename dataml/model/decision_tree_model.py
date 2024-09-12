@@ -89,7 +89,7 @@ class DecisionTreeModel(BaseModel):
         except Exception as e:
             feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].to_csv(
                 os.path.join(data_dir, self.model_type + '_feature_importance.csv'))
-            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance', 'IV']].head(30))
+            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].head(30))
         return  feature_imp,data_map
 
 
@@ -106,7 +106,7 @@ class DecisionTreeModel(BaseModel):
         text_representation = tree.export_text(self.model_fit, feature_names=feature_names,max_depth=self.params['max_depth'])
         logger.debug(text_representation)
 
-        plt.figure(figsize=(25, 20))
+        plt.figure(figsize=(25, 20), dpi=900)
         _ = tree.plot_tree(self.model_fit,
                            feature_names=X_test.columns,
                            class_names=self.class_names,
