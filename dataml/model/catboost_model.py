@@ -95,8 +95,13 @@ class CatBoostModel(BaseModel):
         if iv_df is not  None:
             feature_imp = feature_imp.merge(iv_df,how='left',left_on=self.var_en_name,right_on='variable')
         logger.info('输出特征重要性')
-        feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].to_csv(os.path.join(data_dir,'catboost_feature_importance.csv'))
-        logger.debug(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
+        try:
+            feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].to_csv(os.path.join(data_dir,self.model_type+'_feature_importance.csv'))
+            logger.debug(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
+        except Exception as e:
+            feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].to_csv(
+                os.path.join(data_dir, self.model_type + '_feature_importance.csv'))
+            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance', 'IV']].head(30))
         return  feature_imp,data_map
 
 
@@ -175,10 +180,13 @@ class CatBoostModel(BaseModel):
                       y_target,
                       cache_dir=None,
                       flag='test',
-                      index_col='cst_id'):
+                      index_col='cst_id'
+                      ,encoder_type='onehot'):
         logger.debug(self.name)
         print(self.model.get_params())  # 查看模型参数
 
+        if encoder_type is None:
+            encoder_type = 'none'
         # 处理未知值
         X_test.replace('Unknown', pd.NA, inplace=True)
 
@@ -233,7 +241,9 @@ class CatBoostModel(BaseModel):
                                                                  cache_dir=cache_dir,
                                                                  model_type='catboost',
                                                                  flag=flag,
-                                                                 index_col=index_col)
+                                                                 index_col=index_col,
+                                                                 encoder_type=encoder_type
+                                                                 )
             return y_score_test, y_pred_test, test_df
 
     def evaluate(self,
@@ -243,10 +253,13 @@ class CatBoostModel(BaseModel):
                  y_test,
                  y_target,
                  cache_dir=None,
-                 index_col='cst_id'):
+                 index_col='cst_id'
+                 ,encoder_type='none'):
         logger.info(self.name)
         # X.replace('Unknown', pd.NA, inplace=True)
         # X_test.replace('Unknown', pd.NA, inplace=True)
+        if encoder_type is None:
+            encoder_type = 'none'
         if self.model is None:
             logger.debug('请先使用self.load(model_dir)加载模型！')
             return None,None,None
@@ -264,7 +277,8 @@ class CatBoostModel(BaseModel):
                                                                 pos_label=1,
                                                                 cache_dir=cache_dir,
                                                                 model_type='catboost',
-                                                                index_col=index_col)
+                                                                index_col=index_col,
+                                                                encoder_type=encoder_type)
             return y_score_test,y_pred_test,test_df
 
     def hyperparams_search(self,X,y):

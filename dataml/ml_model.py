@@ -310,7 +310,7 @@ class MLModel:
         return df_all,df_y
 
 
-    def train(self, model_type=None,encoder_type='onehot'):
+    def train(self, model_type=None,encoder_type='onehot',feature_result=None):
 
         """Paramas:
          model_type:模型类型
@@ -321,7 +321,10 @@ class MLModel:
         # 加载数据集
         df_all, df_Y = self.load_data(self.train_dataset,mode = 'train', source = 'train')
         # 特征筛选
-        iv_df,feature_result, df, y_df = self.feature_process(df=df_all, df_y=df_Y, mode='train')
+        iv_df, df, y_df = None,df_all,df_Y[self.y_target]
+        if feature_result is None or len(feature_result)==0:
+            iv_df,feature_result, df, y_df = self.feature_process(df=df_all, df_y=df_Y, mode='train')
+
         del df_all
         gc.collect()
         gc.collect()
@@ -421,6 +424,8 @@ class MLModel:
 
             model.persist(self.model_dir,encoder_type=self.encoder_type)
             #model evalueate
+            if encoder_type is None:
+                encoder_type = 'none'
             y_score_test,y_pred_test,test_df = model.evaluate(
                 X,
                 X_test,
@@ -428,16 +433,18 @@ class MLModel:
                 y_test,
                 self.y_target,
                 cache_dir=self.cache_dir,
-                index_col=self.index_col
+                index_col=self.index_col,
+                encoder_type=encoder_type
             )
-            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8',index=False)
+
+            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+encoder_type+'_test_model_probs.csv'),encoding='utf8',index=False)
             #feature importance
             feature_imp,data_dict=model.model_feature_importance(X,self.data_dict_path,iv_df=iv_df,data_dir=self.cache_dir)
             model.feature_explain(X_test=X_test,y_test=y_test,data_map=data_dict)
             gc.collect()
             gc.collect()
 
-    def outtime(self, model_type=None,encoder_type='onehot',need_load_model=True):
+    def outtime(self, model_type=None,encoder_type='onehot',need_load_model=True,need_imbance_process=False):
         ...
         logger.info('model predict starting...')
         self.load_model_features()
@@ -467,7 +474,21 @@ class MLModel:
 
         logger.debug(X.shape)
 
+        if need_imbance_process:
+            # 不均衡数据处理
+            if self.post_process is not None:
+                if isinstance(self.post_process, list):
+                    for process in self.post_process:
+                        X, y_df = process(X, y_df, mode='test', encoder_type=encoder_type)
+                else:
+                    X, y_df = self.post_process(X, y_df, mode='test', encoder_type=encoder_type)
 
+        if encoder_type is None or 'none' in encoder_type:
+            cateorical_features = list(X.select_dtypes(include=pd.Categorical).columns)
+            for col in cateorical_features:
+                X[col] = X[col].astype('category')  # 先转换为类别类型
+                X[col] = X[col].cat.codes  # 然后使用 cat.codes 编码为整数
+                X[col] = X[col].replace(-1, X[col].max() + 1)  # 若存在空值，替换为最大类别值+1
         # 模型预测结果输出
         if model_type is not None:
             filter_models = [model for model in self.models if model.model_type in model_type]
@@ -475,18 +496,25 @@ class MLModel:
             filter_models = self.models
         logger.info('number of models of outtime evaluate.')
 
+        if encoder_type is None:
+            encoder_type = 'none'
         # 加载模型
         for model in filter_models:
             logger.info('current model:{}'.format(model.name))
             if need_load_model :
-                model.load(self.model_dir,encoder_type=self.encoder_type)
+                model.load(self.model_dir,encoder_type=encoder_type)
 
             y_score_test,y_pred_test,test_df  = model.evaluate_test(
                 X,
-                y_test=y_df, y_target=self.y_target,
-                cache_dir=self.cache_dir,flag='oot',index_col=self.index_col)
+                y_test=y_df,
+                y_target=self.y_target,
+                cache_dir=self.cache_dir,
+                flag='oot',
+                index_col=self.index_col,
+                encoder_type=encoder_type
+            )
 
-            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+'_oot_model_probs.csv'),encoding='utf8',index=False)
+            test_df.to_csv(os.path.join(self.cache_dir,model.model_type+encoder_type+'_oot_model_probs.csv'),encoding='utf8',index=False)
 
             #feature importance
             featrue_imp,data_dict = model.model_feature_importance(X,self.data_dict_path,iv_df=iv_df,data_dir=self.cache_dir)
@@ -930,17 +958,19 @@ class MLModel:
 
 
 
-    def oot_model_psi(self,score_name='y_prob',p=10,model_type='lgb'):
+    def oot_model_psi(self,score_name='y_prob',p=10,model_type='lgb',encoder_type='onehot'):
         """
         模型PSI
         :param p:
         :param model_type:
         :return:
         """
+        if encoder_type is None:
+            encoder_type = 'none'
         for model in self.models:
             if model_type == model.model_type:
-                oot_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+'_oot_model_probs.csv'),encoding='utf8')
-                test_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+'_test_model_probs.csv'),encoding='utf8')
+                oot_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+encoder_type+'_oot_model_probs.csv'),encoding='utf8')
+                test_prob_df = pd.read_csv(os.path.join(self.cache_dir,model.model_type+encoder_type+'_test_model_probs.csv'),encoding='utf8')
                 model_psi_oot = calculate_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
                 # model_psi_oot = calculate_psi_histogram(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
                 # model_psi_oot = model_psi(test_prob_df[score_name].values,oot_prob_df[score_name].values,p)
@@ -948,12 +978,17 @@ class MLModel:
                 return model_psi_oot
 
     def output_list(self, model_type=None, min_lift=None,encoder_type='onehot'):
+
         """
         模型清单
         :param model_type:
         :param min_lift:
         :return:
         """
+
+        if encoder_type is None:
+            encoder_type = 'none'
+
         cst_base_info_df=pd.DataFrame()
         X,pred_df,fea_df = self.predict_feature_process(encoder_type=encoder_type)
         self.encoder_type = encoder_type
@@ -984,7 +1019,7 @@ class MLModel:
             #probability distribution
             prob_distplot(model_pred_df,var_name='probs',bins=10)
 
-            cutoff_high_response, cutoff_medium_response,_,_ = output_list_by_model(os.path.join(self.cache_dir,model.model_type+'_test_report.csv'),min_lift=actual_min_lift)
+            cutoff_high_response, cutoff_medium_response,_,_ = output_list_by_model(os.path.join(self.cache_dir,model.model_type+encoder_type+'_test_report.csv'),min_lift=actual_min_lift)
             cut_bins = [-float('inf'),cutoff_medium_response,cutoff_high_response,float('inf')]
             cut_labels = ['低响应','中响应','高响应']
 
@@ -1053,6 +1088,9 @@ class MLModel:
         :param model_size:
         :return:
         """
+
+        if encoder_type is None:
+            encoder_type = 'none'
         X,pred_df, fea_df = self.predict_feature_process(encoder_type=encoder_type)
         self.encoder_type = encoder_type
         cluster_df =fea_df
@@ -1192,7 +1230,7 @@ class MLModel:
             new_tgi_df.reset_index().to_csv(os.path.join(self.cache_dir,'user_importance_feature_tgi.csv'),encoding='utf8')
             return new_tgi_df,num_tgi_df,cat_tgi_df,cluster_usr_profile_df
 
-    def user_profile(self,model_type='lgb',gmm_need_retrain=False,model_size=7,tgi_threshold=1.05):
+    def user_profile(self,model_type='lgb',gmm_need_retrain=False,model_size=7,tgi_threshold=1.05,encoder_type='onehot'):
         """
         用户画像
         :param model_type:
@@ -1201,7 +1239,10 @@ class MLModel:
         :param tgi_threshold:
         :return:
         """
-        cluster_df = self.user_cluster(model_type='lgb',gmm_need_retrain=gmm_need_retrain,model_size=model_size)
+        if encoder_type is None:
+            encoder_type = 'none'
+
+        cluster_df = self.user_cluster(model_type=model_type,gmm_need_retrain=gmm_need_retrain,model_size=model_size,encoder_type=encoder_type)
         cluster_df_c =cluster_df.copy().reset_index()
         new_tgi_df,num_tgi_df,cat_tgi_df,cluster_usr_profile_df = self.cal_tgi(cluster_df,tgi_threshold=tgi_threshold)
         cluster_df_c['cluster'] = cluster_df_c['cluster'].astype(int)
@@ -1243,7 +1284,7 @@ class MLModel:
                        odds0=odds0)
 
 
-    def model_report(self,model_type='lgb',flag='test'):
+    def model_report(self,model_type='lgb',flag='test',encoder_type='onehot'):
         '''
         模型报告
         :param self:
@@ -1251,7 +1292,9 @@ class MLModel:
         :param flag:
         :return:
         '''
-        df = pd.read_csv(os.path.join(self.cache_dir, model_type + '_' + flag + '_report.csv'), encoding='utf8')
+        if encoder_type is None:
+            encoder_type = 'none'
+        df = pd.read_csv(os.path.join(self.cache_dir, model_type +encoder_type+ '_' + flag + '_report.csv'), encoding='utf8')
         return df
 
 

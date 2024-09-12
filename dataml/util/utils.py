@@ -924,7 +924,7 @@ def forest_selection(df_train_woe, labels, missing_threshold=0.99, correlation_t
 
 
 def plot_corr(df):
-    plt.figure(figsize=(12, 10))
+    plt.figure(figsize=(20, 20))
     sns.heatmap(df.corr(), cmap='RdBu', annot=True, vmin=-1, vmax=1)
     plt.title('Correlation Matrix')
     plt.show()
@@ -1372,7 +1372,8 @@ def model_test_eval(model_fit,
                     cache_dir='.',
                     model_type='lr',
                     flag='test',
-                    index_col='cst_id'):
+                    index_col='cst_id'
+                    ,encoder_type='none'):
     """
 
     :param model_fit: 模型
@@ -1386,7 +1387,8 @@ def model_test_eval(model_fit,
     :return:
     """
     logger.info('model predict of {}...'.format(flag))
-
+    if encoder_type is None or 'none' in encoder_type:
+        encoder_type = 'none'
     y_score_test,y_pred_test,test_df = model_predict(model_fit,X_test)
     # 检查 test_df 是否有重复索引
     logger.debug('是否有重复索引：'.format(test_df.index.duplicated().any()))
@@ -1442,7 +1444,7 @@ def model_test_eval(model_fit,
         ,'cumbpositive':'累计响应率'
     },inplace=True)
     report_df_filter = report_df[['变量','分箱','总样本','响应样本','未响应样本','响应率','累计样本率','累计响应率','IV','KS','LIFT']]
-    report_df_filter.to_csv(os.path.join(cache_dir,model_type+'_'+flag+'_report.csv'),encoding='utf8',index=False)
+    report_df_filter.to_csv(os.path.join(cache_dir,model_type+encoder_type+'_'+flag+'_report.csv'),encoding='utf8',index=False)
     logger.debug(report_df_filter.head())
 
     #模型评分分布
@@ -1464,7 +1466,7 @@ def model_test_eval(model_fit,
     prob_plot(score=test_df['score'],prob=test_df['y_prob'])
 
     test_df[[y_target,'y_prob','y_pred','score']].sort_values('score',ascending=True)
-    test_df[[y_target,'y_prob','y_pred','score']].to_csv(os.path.join(cache_dir,model_type+'_model_probs.csv'),encoding='utf8',index=False)
+    test_df[[y_target,'y_prob','y_pred','score']].to_csv(os.path.join(cache_dir,model_type+encoder_type+'_model_probs.csv'),encoding='utf8',index=False)
     # test_df.to_csv(os.path.join(cache_dir,model_type+'_model_probs.csv'),encoding='utf8',index=False)
     return y_score_test,y_pred_test,test_df
 
@@ -1487,6 +1489,7 @@ def model_predict_eval(model_fit,
                         cache_dir='.',
                         model_type='lr',
                         index_col='cst_id'
+                       ,encoder_type='onehot'
                   ):
     """
     模型预测及评估
@@ -1510,7 +1513,8 @@ def model_predict_eval(model_fit,
                                                          cache_dir=cache_dir,
                                                          model_type=model_type,
                                                          flag='train',
-                                                         index_col=index_col)
+                                                         index_col=index_col,
+                                                         encoder_type=encoder_type)
 
     y_score_test,y_pred_test,test_df = model_test_eval(model_fit,
                     X_test,
@@ -1520,13 +1524,14 @@ def model_predict_eval(model_fit,
                     cache_dir=cache_dir,
                     model_type=model_type,
                     flag='test',
-                    index_col=index_col)
+                    index_col=index_col,
+                   encoder_type=encoder_type)
 
     logger.debug(y_score_train.shape)
     logger.debug(y_score_test.shape)
     # model_psi_test = model_psi(y_score_test,y_test,10)
-    model_psi_test = calculate_psi(y_score_train,y_score_test,10)
-    logger.info('训练测试模型PSI：{}'.format(model_psi_test))
+    # model_psi_test = calculate_psi(y_score_train,y_score_test,10)
+    # logger.info('训练测试模型PSI：{}'.format(model_psi_test))
     return y_score_test,y_pred_test,test_df
 
 def extract_table_names(sql):

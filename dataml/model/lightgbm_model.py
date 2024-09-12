@@ -74,8 +74,13 @@ class LightGBMModel(BaseModel):
         if iv_df is not  None:
             feature_imp = feature_imp.merge(iv_df,how='left',left_on=self.var_en_name,right_on='variable')
         logger.info('输出特征重要性')
-        feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].to_csv(os.path.join(data_dir,'lgb_feature_importance.csv'))
-        logger.debug(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
+        try:
+            feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].to_csv(os.path.join(data_dir,self.model_type+'_feature_importance.csv'))
+            logger.debug(feature_imp[[self.var_en_name,self.var_zh_name,'feature_importance','IV']].head(30))
+        except Exception as e:
+            feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance']].to_csv(
+                os.path.join(data_dir, self.model_type + '_feature_importance.csv'))
+            logger.debug(feature_imp[[self.var_en_name, self.var_zh_name, 'feature_importance', 'IV']].head(30))
         return  feature_imp,data_map
 
 
@@ -133,8 +138,11 @@ class LightGBMModel(BaseModel):
                       y_target,
                       cache_dir=None,
                       flag='test',
-                      index_col='cst_id'):
+                      index_col='cst_id'
+                      ,encoder_type='onehot'):
         logger.debug(self.name)
+        if encoder_type is None:
+            encoder_type = 'none'
         if self.model_fit is None:
             logger.debug('please load model first using self.load(model_dir)')
             return None, None, None
@@ -147,7 +155,8 @@ class LightGBMModel(BaseModel):
                                                                cache_dir=cache_dir,
                                                                model_type='lgb',
                                                                flag=flag,
-                                                               index_col=index_col
+                                                               index_col=index_col,
+                                                               encoder_type=encoder_type
                                                                )
             return y_score_test,y_pred_test,test_df
 
@@ -158,7 +167,10 @@ class LightGBMModel(BaseModel):
                  y_test,
                  y_target,
                  cache_dir=None,
-                 index_col='cst_id'):
+                 index_col='cst_id'
+                 ,encoder_type='onehot'):
+        if encoder_type is None:
+            encoder_type = 'none'
         logger.info(self.name)
         if self.model_fit is None:
             logger.debug('请先使用self.load(model_dir)加载模型！')
@@ -173,7 +185,8 @@ class LightGBMModel(BaseModel):
                                                                 pos_label=1,
                                                                 cache_dir=cache_dir,
                                                                 model_type='lgb',
-                                                                index_col=index_col)
+                                                                index_col=index_col,
+                                                                encoder_type=encoder_type)
             return y_score_test,y_pred_test,test_df
 
     def hyperparams_search(self,X,y):

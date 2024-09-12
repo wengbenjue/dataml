@@ -112,8 +112,11 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                       y_target,
                       cache_dir=None,
                       flag='test',
-                      index_col='cst_id'):
+                      index_col='cst_id'
+                      ,encoder_type='onehot'):
         logger.debug(self.name)
+        if encoder_type is None:
+            encoder_type = 'none'
         if self.model_fit is None:
             logger.debug('please load model first using self.load(model_dir)')
             return None, None, None
@@ -126,7 +129,8 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                                                                  cache_dir=cache_dir,
                                                                  model_type='lr',
                                                                  flag=flag,
-                                                                 index_col=index_col)
+                                                                 index_col=index_col,
+                                                                 encoder_type=encoder_type)
             return y_score_test, y_pred_test, test_df
 
     def evaluate(self,
@@ -136,8 +140,11 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                  y_test,
                  y_target,
                  cache_dir=None,
-                 index_col='cst_id'):
+                 index_col='cst_id'
+                 ,encoder_type='onehot'):
         logger.debug(self.name)
+        if encoder_type is None:
+            encoder_type = 'none'
         if self.model_fit is None:
             logger.debug('请先使用self.load(model_dir)加载模型！')
             return None, None, None
@@ -151,7 +158,8 @@ solver=self.params_new['solver'],class_weight=self.params_new['class_weight'])
                                                                     pos_label=1,
                                                                     cache_dir=cache_dir,
                                                                     model_type='lr',
-                                                                    index_col=index_col)
+                                                                    index_col=index_col,
+                                                                    encoder_type=encoder_type)
             return y_score_test, y_pred_test, test_df
 
     def hyperparams_search(self,X,y):

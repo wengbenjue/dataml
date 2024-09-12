@@ -30,7 +30,8 @@ class BaseModel:
                       y_target,
                       cache_dir=None,
                       flag='test',
-                      index_col='cst_id'):
+                      index_col='cst_id'
+                      ,encoder_type='none'):
         pass
 
     def evaluate(self,
@@ -40,7 +41,8 @@ class BaseModel:
                  y_test,
                  y_target,
                  cache_dir=None,
-                 index_col='cst_id'):
+                 index_col='cst_id'
+                 ,encoder_type='none'):
         pass
 
     def hyperparams_search(self,X,y):

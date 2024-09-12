@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # mlModel.train()
     # mlModel.train(model_type='lr',encoder_type='onehot')
     # mlModel.train(model_type='lgb',encoder_type='onehot')
+    mlModel.train(model_type='decision_tree',encoder_type='onehot',feature_result=['loanAmnt','term'])
     # mlModel.train(model_type='decision_tree',encoder_type='onehot')
 
     # mlModel.train(model_type='lgb',encoder_type='woe')
@@ -14,6 +15,6 @@ if __name__ == '__main__':
     # mlModel.outtime(model_type='catboost', encoder_type=None, need_load_model=False)
     # psi = mlModel.oot_model_psi(score_name='y_prob', p=10, model_type='catboost')
 
-    mlModel.train(model_type='lgb', encoder_type=None)
-    mlModel.outtime(model_type='lgb', encoder_type=None, need_load_model=True)
-    psi = mlModel.oot_model_psi(score_name='y_prob', p=10, model_type='lgb')
+    # mlModel.train(model_type='lgb', encoder_type=None)
+    # mlModel.outtime(model_type='lgb', encoder_type=None, need_load_model=True)
+    # psi = mlModel.oot_model_psi(score_name='y_prob', p=10, model_type='lgb',encoder_type=None)
