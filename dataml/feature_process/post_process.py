@@ -59,19 +59,22 @@ class ImbalanceProcess(PostProcess):
             logger.info('No sampling strategy, processing skipped.')
             return df_balanced, y
 
-        if self.imbalance_type == 'under_sample':
-            X,y = under_sample_en(X,y, self.y_target, self.desired_ratio)
-        elif self.imbalance_type == 'over_sample':
-            if encoder_type is None or encoder_type =='none':
-                X, y = oversample_x_y(X, y, positive_class_ratio=self.desired_ratio,data_dir=self.data_dir)
-            else:
-                X,y = oversample_encoded(X, y, positive_class_ratio=self.desired_ratio)
+        if self.imbalance_test and mode !='train':
+            X, y = under_sample_en(X, y, self.y_target, self.desired_ratio)
         else:
-            X, y = mixed_sampling_with_categorical_encoded(
-                X, y, self.desired_ratio, y_target=self.y_target,
-                under_desired_ratio=self.under_desired_ratio, data_dir=self.data_dir,
-                encoder_type = encoder_type
-            )
+            if self.imbalance_type == 'under_sample':
+                X,y = under_sample_en(X,y, self.y_target, self.desired_ratio)
+            elif self.imbalance_type == 'over_sample':
+                if encoder_type is None or encoder_type =='none':
+                    X, y = oversample_x_y(X, y, positive_class_ratio=self.desired_ratio,data_dir=self.data_dir)
+                else:
+                    X,y = oversample_encoded(X, y, positive_class_ratio=self.desired_ratio)
+            else:
+                X, y = mixed_sampling_with_categorical_encoded(
+                    X, y, self.desired_ratio, y_target=self.y_target,
+                    under_desired_ratio=self.under_desired_ratio, data_dir=self.data_dir,
+                    encoder_type = encoder_type
+                )
 
         logger.debug(f'{self.name}, {X.shape}, using {self.imbalance_type} sample strategy')
         return X, y

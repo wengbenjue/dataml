@@ -35,8 +35,9 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # 输出日志到控制台
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.INFO)  # 设置控制台日志级别为 INFO
-# console_formatter = logging.Formatter('%(levelname)s - %(message)s')
-# console_handler.setFormatter(console_formatter)
-# logger.addHandler(console_handler)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.DEBUG)  # 设置控制台日志级别为 INFO
+console_formatter = logging.Formatter('%(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
